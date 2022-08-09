@@ -1,0 +1,3 @@
+displayName = Super Ultra Fishing
+author = SuperAndyHero
+version = 0.1
