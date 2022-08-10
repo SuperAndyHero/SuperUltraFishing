@@ -93,15 +93,14 @@ namespace SuperUltraFishing
 
         public void BuildTileMesh()
         {
-            int sizeX = world.AreaArray.GetLength(0);
-            int sizeY = world.AreaArray.GetLength(1);
-            int sizeZ = world.AreaArray.GetLength(2);
+            if (!world.WorldGenerated)
+                world.GenerateWorld();
 
-            for (int x = 0; x < sizeX; x++)
+            for (int x = 0; x < world.AreaSizeX; x++)
             {
-                for (int y = 0; y < sizeY; y++)
+                for (int y = 0; y < world.AreaSizeY; y++)
                 {
-                    for (int z = 0; z < sizeZ; z++)
+                    for (int z = 0; z < world.AreaSizeZ; z++)
                     {
                         BasicTile tile = world.AreaArray[x, y, z];
                         if (!tile.Active)
@@ -109,20 +108,21 @@ namespace SuperUltraFishing
 
                         float colorMult = 1f;// new Vector3(x, y, z).Length() / new Vector3(sizeX, sizeY, sizeZ).Length();
 
-                        if (!(x + 1 < sizeZ) || !world.AreaArray[x + 1, y, z].Active)
+                        if (!(x + 1 < world.AreaSizeX) || !world.AreaArray[x + 1, y, z].Active)
                             AddQuad(new Vector3(x, y, z), new Vector3(0, 0, -(float)Math.PI / 2), Color.Purple * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
 
                         if (!(x - 1 >= 0) || !world.AreaArray[x - 1, y, z].Active)
                             AddQuad(new Vector3(x, y, z), new Vector3(0, 0, (float)Math.PI / 2), Color.Green * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
 
-                        if (!(y + 1 < sizeZ) || !world.AreaArray[x, y + 1, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), Color.White * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
 
+                        if (!(y + 1 < world.AreaSizeY) || !world.AreaArray[x, y + 1, z].Active)
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), Color.White * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
 
                         if (!(y - 1 >= 0) || !world.AreaArray[x, y - 1, z].Active)
                             AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), Color.Red * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
 
-                        if (!(z + 1 < sizeZ) || !world.AreaArray[x, y, z + 1].Active)
+
+                        if (!(z + 1 < world.AreaSizeZ) || !world.AreaArray[x, y, z + 1].Active)
                             AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), Color.Yellow * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
 
                         if (!(z - 1 >= 0) || !world.AreaArray[x, y, z - 1].Active)

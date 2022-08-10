@@ -24,9 +24,14 @@ namespace SuperUltraFishing
     {
         public bool WindowActive = true;
 
+        private World world;
         private Rendering rendering;
+        public int selectedPointA = -1;
+        public int selectedPointB = -1;
+
         public override void Load()
         {
+            world = GetInstance<World>();
             rendering = GetInstance<Rendering>();
         }
 
@@ -39,22 +44,24 @@ namespace SuperUltraFishing
 
         public override void PostDrawInterface(SpriteBatch spriteBatch)
         {
-            spriteBatch.Draw(rendering.WindowTarget, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight), Color.White);
-        }
-
-        public override void PostUpdateInput()
-        {
-            UpdateInput();  
+            spriteBatch.Draw(rendering.WindowTarget, new Rectangle(100, 100, Main.screenWidth - 100, Main.screenHeight - 100), Color.White);
         }
 
         private int lastMouseX = 0;
         private int lastMouseY = 0;
-        public void UpdateInput()
+        public override void PostUpdateInput()
         {
             if (WindowActive)
                 Main.cursorScale = 0;
 
-            if(Main.keyState.IsKeyDown(Keys.NumPad0))
+
+            if (Main.keyState.IsKeyDown(Keys.NumPad0) && !Main.oldKeyState.IsKeyDown(Keys.NumPad0))
+            {
+                Main.NewText("Regenerated Tile Array");
+                world.GenerateWorld();
+            }
+
+            if (Main.keyState.IsKeyDown(Keys.NumPad1) && !Main.oldKeyState.IsKeyDown(Keys.NumPad1))
             {
                 Main.NewText("Rebuilt vertex buffer");
                 rendering.BuildVertexBuffer();
