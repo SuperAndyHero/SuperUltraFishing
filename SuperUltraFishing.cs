@@ -6,8 +6,15 @@ namespace SuperUltraFishing
 {
 	public class SuperUltraFishing : Mod
 	{
-		public Tile[,,] AreaArray;
+        public override void Load()
+        {
+            ContentHandler.Load();
+            //Model model = ContentHandler.GetModel("SuperUltraFishing/Models/20Dice");
+        }
 
-		public RenderTarget2D WindowTarget = new RenderTarget2D(Main.graphics.GraphicsDevice, 224, 320);
-	}
+        public override void Unload()
+        {
+            ContentHandler.Unload();
+        }
+    }
 }
