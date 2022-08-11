@@ -25,8 +25,11 @@ namespace SuperUltraFishing
         public RenderTarget2D WindowTarget;
         public BasicEffect basicEffect;
 
-        public List<VertexPositionColorTexture> TileMeshVertices = new();
-        public VertexBuffer VertBuffer;
+        //public List<VertexPositionColorTexture> TileMeshVertices = new();
+        //public VertexBuffer VertBuffer;
+
+        public Dictionary<Texture2D, List<VertexPositionColorTexture>> TextureVertices = new Dictionary<Texture2D, List<VertexPositionColorTexture>>();
+        public Dictionary<Texture2D, VertexBuffer> TextureBuffers = new Dictionary<Texture2D, VertexBuffer>();
 
         public Vector3 CameraPosition = Vector3.Zero;
         public float CameraYaw = 0;
@@ -35,11 +38,15 @@ namespace SuperUltraFishing
         public bool VertexBufferBuilt = false;
 
         private World world;
+        private FishingUIWindow fishingUIWindow;
 
-        public override void Load()
+        public override void PostAddRecipes()
         {
             world = GetInstance<World>();
-
+            fishingUIWindow = GetInstance<FishingUIWindow>();
+        }
+        public override void Load()
+        {
             Main.QueueMainThreadAction(() =>
             {
                 if (!Main.dedServ)
@@ -49,7 +56,7 @@ namespace SuperUltraFishing
                     {
                         VertexColorEnabled = true,
                         TextureEnabled = true,
-                        Texture = Terraria.GameContent.TextureAssets.Ninja.Value
+                        Texture = Terraria.GameContent.TextureAssets.BlackTile.Value,    
                     };
                     basicEffect.Projection = Matrix.CreatePerspectiveFieldOfView((float)Math.PI / 2f, (float)Main.screenWidth / (float)Main.screenHeight, 1, 2000);
                     basicEffect.World = Matrix.CreateWorld(Vector3.Zero, Vector3.Forward, Vector3.Up) * Matrix.CreateScale(10);
@@ -57,166 +64,219 @@ namespace SuperUltraFishing
             });
         }
 
+        public void ResetCamera()
+        {
+            CameraPosition = Vector3.Zero;
+            CameraYaw = 0;
+            CameraPitch = 0;
+        }
+
+        //draw vertex buffer to render target
         public override void PostDrawTiles()
         {
-            if (!VertexBufferBuilt)
-                BuildVertexBuffer();
-
-            Main.graphics.GraphicsDevice.SetRenderTarget(WindowTarget);
-            Main.graphics.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-            if (VertexBufferBuilt)
+            if (fishingUIWindow.WindowActive)
             {
-                basicEffect.View = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
+                if (!VertexBufferBuilt)
+                    return;
+
                 //Main.NewText("yaw: " + CameraYaw);
                 //Main.NewText("pitch: " + CameraPitch);
 
-                basicEffect.CurrentTechnique.Passes[0].Apply();
-                Main.graphics.GraphicsDevice.SetVertexBuffer(VertBuffer);
-                Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, VertBuffer.VertexCount / 3);
+                Main.graphics.GraphicsDevice.SetRenderTarget(WindowTarget);
+                Main.graphics.GraphicsDevice.Clear(Color.Gray);
+                Main.graphics.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+                Main.graphics.GraphicsDevice.BlendState = BlendState.AlphaBlend;
+                Main.graphics.GraphicsDevice.SamplerStates[0] = SamplerState.PointClamp;
+
+                //Terraria.GameContent.TextureAssets.Ninja.Value;
+
+                if (VertexBufferBuilt)
+                {
+                    basicEffect.View = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
+                    foreach(KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
+                    {
+                        basicEffect.Texture = pair.Key;
+                        basicEffect.CurrentTechnique.Passes[0].Apply();
+                        Main.graphics.GraphicsDevice.SetVertexBuffer(pair.Value);
+                        Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
+                    }
+                }
+                Main.graphics.GraphicsDevice.SetRenderTarget(null);
             }
-            Main.graphics.GraphicsDevice.SetRenderTarget(null);
         }
 
         public void BuildVertexBuffer()
         {
-            TileMeshVertices.Clear();
-            
+            TextureVertices.Clear();
+
+            AddFloorPlane(Terraria.GameContent.TextureAssets.Ninja.Value);
+
             BuildTileMesh();
+             
 
-            AddFloorPlane();
-
-            VertBuffer = new VertexBuffer(Main.graphics.GraphicsDevice, typeof(VertexPositionColorTexture), TileMeshVertices.Count + 1, BufferUsage.WriteOnly);
-            VertBuffer.SetData(TileMeshVertices.ToArray());
+            
+            TextureBuffers.Clear();
+            foreach(KeyValuePair<Texture2D, List<VertexPositionColorTexture>> pair in TextureVertices)
+            {
+                TextureBuffers.Add(pair.Key, new VertexBuffer(Main.graphics.GraphicsDevice, typeof(VertexPositionColorTexture), pair.Value.Count, BufferUsage.WriteOnly));
+                TextureBuffers[pair.Key].SetData(pair.Value.ToArray());
+            }
 
             VertexBufferBuilt = true;
         }
 
-        public void BuildTileMesh()
+        private void BuildTileMesh()
         {
             if (!world.WorldGenerated)
-                world.GenerateWorld();
-
-            for (int x = 0; x < world.AreaSizeX; x++)
             {
-                for (int y = 0; y < world.AreaSizeY; y++)
+                Main.NewText("Tried to build world before generated", Color.IndianRed);
+                return;
+            }
+
+            int sizeX = world.AreaArray.GetLength(0);
+            int sizeY = world.AreaArray.GetLength(1);
+            int sizeZ = world.AreaArray.GetLength(2);
+
+            for (int x = 0; x < sizeX; x++)
+            {
+                for (int y = 0; y < sizeY; y++)
                 {
-                    for (int z = 0; z < world.AreaSizeZ; z++)
+                    for (int z = 0; z < sizeZ; z++)
                     {
                         BasicTile tile = world.AreaArray[x, y, z];
                         if (!tile.Active)
                             continue;
+                        Texture2D tileTexture = Terraria.GameContent.TextureAssets.Tile[tile.TileType].Value;
 
                         float colorMult = 1f;// new Vector3(x, y, z).Length() / new Vector3(sizeX, sizeY, sizeZ).Length();
+                        Color color = Color.White * colorMult;
 
-                        if (!(x + 1 < world.AreaSizeX) || !world.AreaArray[x + 1, y, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, -(float)Math.PI / 2), Color.Purple * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
+                        if (!(x + 1 < sizeX) || !world.AreaArray[x + 1, y, z].Active)
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, -(float)Math.PI / 2), color, tileTexture);
 
                         if (!(x - 1 >= 0) || !world.AreaArray[x - 1, y, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, (float)Math.PI / 2), Color.Green * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, (float)Math.PI / 2), color, tileTexture);
 
 
-                        if (!(y + 1 < world.AreaSizeY) || !world.AreaArray[x, y + 1, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), Color.White * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
+                        if (!(y + 1 < sizeY) || !world.AreaArray[x, y + 1, z].Active)
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), color, tileTexture);
 
                         if (!(y - 1 >= 0) || !world.AreaArray[x, y - 1, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), Color.Red * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), color, tileTexture);
 
 
-                        if (!(z + 1 < world.AreaSizeZ) || !world.AreaArray[x, y, z + 1].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), Color.Yellow * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
+                        if (!(z + 1 < sizeZ) || !world.AreaArray[x, y, z + 1].Active)
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), color, tileTexture);
 
                         if (!(z - 1 >= 0) || !world.AreaArray[x, y, z - 1].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, -(float)Math.PI / 2, 0), Color.Blue * colorMult, Terraria.GameContent.TextureAssets.BlackTile.Value);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, -(float)Math.PI / 2, 0), color, tileTexture);
                     }
                 }
             }
         }
 
-        public void AddFloorPlane()
+        private void AddFloorPlane(Texture2D texture)
         {
+            if (!TextureVertices.ContainsKey(texture))
+                TextureVertices[texture] = new List<VertexPositionColorTexture>();
+
             float scale = 100;
             float drop = 32;
             VertexPositionColorTexture vertex = new VertexPositionColorTexture();
             vertex.Position = new Vector3(-scale, -drop, -scale);
             vertex.Color = Color.BlanchedAlmond;
             vertex.TextureCoordinate = new Vector2(0, 0);
-            TileMeshVertices.Add(vertex);
+            TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorTexture();
             vertex.Position = new Vector3(scale, -drop, -scale);
             vertex.Color = Color.Cornsilk;
             vertex.TextureCoordinate = new Vector2(1, 0);
-            TileMeshVertices.Add(vertex);
+            TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorTexture();
             vertex.Position = new Vector3(-scale, -drop, scale);
             vertex.Color = Color.Cornsilk;
             vertex.TextureCoordinate = new Vector2(0, 1);
-            TileMeshVertices.Add(vertex);
+            TextureVertices[texture].Add(vertex);
 
 
             vertex = new VertexPositionColorTexture();
             vertex.Position = new Vector3(scale, -drop, -scale);
             vertex.Color = Color.Cornsilk;
             vertex.TextureCoordinate = new Vector2(1, 0);
-            TileMeshVertices.Add(vertex);
+            TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorTexture();
             vertex.Position = new Vector3(scale, -drop, scale);
             vertex.Color = Color.SaddleBrown;
             vertex.TextureCoordinate = new Vector2(1, 1);
-            TileMeshVertices.Add(vertex);
+            TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorTexture();
             vertex.Position = new Vector3(-scale, -drop, scale);
             vertex.Color = Color.Cornsilk;
             vertex.TextureCoordinate = new Vector2(0, 1);
-
-            TileMeshVertices.Add(vertex);
+            TextureVertices[texture].Add(vertex);
         }
 
-        public void AddQuad(Vector3 position, Vector3 ypr, Color color, Texture2D texture, Vector2 frame = default, SpriteEffects effects = SpriteEffects.None)
+        private void AddQuad(Vector3 position, Vector3 ypr, Color color, Texture2D texture, Vector2 frame = default, SpriteEffects effects = SpriteEffects.None)
         {
-            int Ycoord = effects.HasFlag(SpriteEffects.FlipVertically) ? 1 : 0;
-            int Xcoord = effects.HasFlag(SpriteEffects.FlipHorizontally) ? 1 : 0;
+            float xSize = 1f / texture.Width;
+            float ySize = 1f / texture.Height;
+
+            if (!TextureVertices.ContainsKey(texture))
+                TextureVertices[texture] = new List<VertexPositionColorTexture>();
+
+            float xMin = frame.X * xSize;
+            float xMax = xMin + (16 * xSize);
+
+            float yMin = frame.Y * ySize;
+            float yMax = yMin + (16 * ySize);
+
+            if (effects.HasFlag(SpriteEffects.FlipHorizontally))
+                (xMin, xMax) = (xMax, xMin);
+
+            if (effects.HasFlag(SpriteEffects.FlipVertically))
+                (yMin, yMax) = (yMax, yMin);
 
             VertexPositionColorTexture vertex = new VertexPositionColorTexture();
             vertex.Position = position + Vector3.Transform(new Vector3(-0.5f, 0.5f, -0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
             vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(Xcoord, Ycoord);
-            TileMeshVertices.Add(vertex);
+            vertex.TextureCoordinate = new Vector2(xMin, yMin);
+            TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorTexture();
             vertex.Position = position + Vector3.Transform(new Vector3(0.5f, 0.5f, -0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
             vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(1 - Xcoord, Ycoord);
-            TileMeshVertices.Add(vertex);
+            vertex.TextureCoordinate = new Vector2(xMax, yMin);
+            TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorTexture();
             vertex.Position = position + Vector3.Transform(new Vector3(-0.5f, 0.5f, 0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
             vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(Xcoord, 1 - Ycoord);
-            TileMeshVertices.Add(vertex);
+            vertex.TextureCoordinate = new Vector2(xMin, yMax);
+            TextureVertices[texture].Add(vertex);
 
 
             vertex = new VertexPositionColorTexture();
             vertex.Position = position + Vector3.Transform(new Vector3(0.5f, 0.5f, -0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
             vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(1 - Xcoord, Ycoord);
-            TileMeshVertices.Add(vertex);
+            vertex.TextureCoordinate = new Vector2(xMax, yMin);
+            TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorTexture();
             vertex.Position = position + Vector3.Transform(new Vector3(0.5f, 0.5f, 0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
             vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(1 - Xcoord, 1 - Ycoord);
-            TileMeshVertices.Add(vertex);
+            vertex.TextureCoordinate = new Vector2(xMax, yMax);
+            TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorTexture();
             vertex.Position = position + Vector3.Transform(new Vector3(-0.5f, 0.5f, 0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
             vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(Xcoord, 1 - Ycoord);
+            vertex.TextureCoordinate = new Vector2(xMin, yMax);
 
-            TileMeshVertices.Add(vertex);
+            TextureVertices[texture].Add(vertex);
         }
     }
 }
