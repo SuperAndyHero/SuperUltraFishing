@@ -37,32 +37,40 @@ namespace SuperUltraFishing
             WorldGenerated = false;
         }
 
-        private bool PassThough(Tile tile) =>
+        private bool EntityPassThough(Tile tile) =>
             !tile.HasTile || !Main.tileSolid[tile.TileType];//may need Main.tileSolidTop[type]
 
+        private bool WaterPassThough(Tile tile) =>
+            !tile.HasTile || !Main.tileSolid[tile.TileType];//may need NotActuallySolid[]
+
         const int minLiquid = 32;
-        public bool CrawlWorld(Point16 start)
+        //const int maxLakeSize = 400;
+        const int surfaceTryDistance = 64; 
+        public (BasicTile tile, bool check)[,] CrawlWorld(Point16 start)//returns null if invalid, returns a 2D array if successful
         {
             Tile startTile = Main.tile[start.X, start.Y];
 
             //liquid type check will be replaced later with different fishing types
+            //checks if origin is valid
             if (startTile.LiquidAmount > minLiquid && startTile.LiquidType == LiquidID.Water)
             {
-                Point16 surfaceStart = start;
+                Point16 surfaceOrigin = start;//start of search and surface location
                 bool atSurface = false;
 
                 //distance to check until surface
-                int surfaceTryDistance = 32;//make const
+                //current offset to the side in case origin in under a tile
                 int xRoofOffset = 0;
+
+                //starts going from origin up to surface, moving slightly to the side it theres a ceiling
                 for (int i = 0; i < surfaceTryDistance; i++)
                 {
                     Tile aboveTile = Main.tile[start.X + xRoofOffset, start.Y - i];
-                    //checks for any passable block (water blocking does not matter)
-                    if (PassThough(aboveTile))//if above does not have a tile, check for liquid. 
+                    //checks for any projecile passable block (water blocking does not matter)
+                    if (EntityPassThough(aboveTile))//if above does not have a tile, check for liquid. 
                     {
                         if (aboveTile.LiquidAmount < minLiquid)//if there is no liquid break loop, else keep trying
                         {
-                            surfaceStart = new Point16(start.X + xRoofOffset, start.Y - i);
+                            surfaceOrigin = new Point16(start.X + xRoofOffset, start.Y - i);
                             atSurface = true;
                             break;
                         }
@@ -76,11 +84,11 @@ namespace SuperUltraFishing
                             xRoofOffset = h;//sets a new offset, if a valid tile is found this offset is kept
                             aboveTile = Main.tile[start.X + xRoofOffset, start.Y - i];
                             //checks for any passable block (water blocking does not matter)
-                            if (PassThough(aboveTile))
+                            if (EntityPassThough(aboveTile))
                             {
                                 if (aboveTile.LiquidAmount < minLiquid)
                                 {
-                                    surfaceStart = new Point16(start.X + xRoofOffset, start.Y - i);
+                                    surfaceOrigin = new Point16(start.X + xRoofOffset, start.Y - i);
                                     atSurface = true;
                                 }
 
@@ -94,18 +102,82 @@ namespace SuperUltraFishing
                 }
 
                 if (!atSurface)
-                    return false;//may return null and/or give too deep message
+                    return null;//may return null and/or give too deep message
 
-                Point16 groundPos = Point16.Zero;
-                int tryDistance = 100;//make const
-                for (int i = 0; i < tryDistance; i++)
+                bool lFoundWater = true;
+                int lOff = 0;
+                bool rFoundWater = true;
+                int rOff = 0;
+                bool dFoundWater = true;
+                int dOff = 0;
+
+                //dynamically finds the max area needed by checking for water blocks
+                //later the main pool will be crawled
+                //possibly other side pools may be as well, if this is the case connecting tunnels will be created
+                for (int a = 0; a < 1000; a++)
                 {
-                    Tile leftTile = Main.tile[surfaceStart.X - i, start.Y];//start checking if a tile exists without passthough
-                    //checks for any water blocking block (water blocking non-solid should either be counted as solid or throw like a missing water would)
+                    //checks left row
+                    for (int l = lFoundWater ? 0 : dOff; l < dOff + 1; l++)//only checks bottom block if no liquid was found
+                    {
+                        Tile tile = Main.tile[surfaceOrigin.X - lOff, surfaceOrigin.Y + l];
+                        if (WaterPassThough(tile) && tile.LiquidType == LiquidID.Water && tile.LiquidAmount > minLiquid)
+                        {
+                            lOff++;
+                            lFoundWater = true;
+                            break;
+                        }
+                        else
+                            lFoundWater = false;
+                    }
+
+                    //checks right row
+                    for (int r = rFoundWater ? 0 : dOff; r < dOff + 1; r++)//only checks bottom block if no liquid was found
+                    {
+                        Tile tile = Main.tile[surfaceOrigin.X + rOff, surfaceOrigin.Y + r];
+                        if (WaterPassThough(tile) && tile.LiquidType == LiquidID.Water && tile.LiquidAmount > minLiquid)
+                        {
+                            rOff++;
+                            rFoundWater = true;
+                            break;
+                        }
+                        else
+                            lFoundWater = false;
+                    }
+
+                    //checks bottom row
+                    if (dFoundWater)
+                        for (int d = 0; d < lOff + rOff + 1; d++)
+                        {
+                            Tile tile = Main.tile[(surfaceOrigin.X - lOff) + d, surfaceOrigin.Y + dOff];
+                            if (WaterPassThough(tile) && tile.LiquidType == LiquidID.Water && tile.LiquidAmount > minLiquid)
+                            {
+                                dOff++;
+                                dFoundWater = true;
+                                break;
+                            }
+                            else
+                               dFoundWater = false;
+                        }
+                    else//only checks under each side bar if no water was found
+                    {
+                        Tile ltile = Main.tile[(surfaceOrigin.X - lOff), surfaceOrigin.Y + dOff + 1];
+                        Tile rtile = Main.tile[(surfaceOrigin.X + rOff), surfaceOrigin.Y + dOff + 1];
+                        if((WaterPassThough(ltile) && ltile.LiquidType == LiquidID.Water && ltile.LiquidAmount > minLiquid) ||
+                            WaterPassThough(rtile) && rtile.LiquidType == LiquidID.Water && rtile.LiquidAmount > minLiquid)
+                        {
+                            dOff++;
+                            dFoundWater = true;
+                            break;
+                        }
+                    }
                 }
+
+                    (BasicTile tile, bool check)[,] array = new (BasicTile tile, bool check)[maxLakeSize, maxLakeSize];
+                int xArrayCenter = maxLakeSize / 2;
+                HashSet<Point16> 
             }
             else
-                return false;//may return null instead
+                return null;//invalid origin
         }
 
         public void CaptureWorldArea(Point16 point1, Point16 point2)
