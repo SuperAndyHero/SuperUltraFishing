@@ -25,6 +25,12 @@ namespace SuperUltraFishing
         public BasicTile[,,] AreaArray = null;
         public bool WorldGenerated = false;
 
+        public string Error = "";
+
+        public Point16 LastWorldLocation = Point16.Zero;
+
+        public int WaterDistanceFromTop = 0;
+
         public void PlaceTile(ushort type, int x, int y, int z)
         {
             AreaArray[x, y, z].TileType = type;
@@ -38,15 +44,19 @@ namespace SuperUltraFishing
         }
 
         private bool EntityPassThough(Tile tile) =>
-            !tile.HasTile || !Main.tileSolid[tile.TileType];//may need Main.tileSolidTop[type]
+            !tile.HasTile || !Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType];//may need Main.tileSolidTop[type]
 
         private bool WaterPassThough(Tile tile) =>
-            !tile.HasTile || !Main.tileSolid[tile.TileType];//may need NotActuallySolid[]
+            !tile.HasTile || !Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType];//may need NotActuallySolid[]
+
+        private bool ValidLiquidTile(Tile tile, int LiquidID = LiquidID.Water) =>
+            WaterPassThough(tile) && tile.LiquidType == LiquidID && tile.LiquidAmount > minLiquid;
 
         const int minLiquid = 32;
-        //const int maxLakeSize = 400;
-        const int surfaceTryDistance = 64; 
-        public (BasicTile tile, bool check)[,] CrawlWorld(Point16 start)//returns null if invalid, returns a 2D array if successful
+        const int maxLakeRectSize = 1000;
+        const int surfaceTryDistance = 64;
+        const int wallBuffer = 5;
+        public Rectangle? FindWorldRect(Point16 start)//returns null if invalid, returns a rectangle if successful
         {
             Tile startTile = Main.tile[start.X, start.Y];
 
@@ -70,7 +80,7 @@ namespace SuperUltraFishing
                     {
                         if (aboveTile.LiquidAmount < minLiquid)//if there is no liquid break loop, else keep trying
                         {
-                            surfaceOrigin = new Point16(start.X + xRoofOffset, start.Y - i);
+                            surfaceOrigin = new Point16(start.X + xRoofOffset, (start.Y - i) + 1);
                             atSurface = true;
                             break;
                         }
@@ -102,7 +112,10 @@ namespace SuperUltraFishing
                 }
 
                 if (!atSurface)
-                    return null;//may return null and/or give too deep message
+                {
+                    Error = "Too deep or no valid surface";
+                    return null;
+                }
 
                 bool lFoundWater = true;
                 int lOff = 0;
@@ -114,16 +127,17 @@ namespace SuperUltraFishing
                 //dynamically finds the max area needed by checking for water blocks
                 //later the main pool will be crawled
                 //possibly other side pools may be as well, if this is the case connecting tunnels will be created
-                for (int a = 0; a < 1000; a++)
+                for (int a = 0; a < maxLakeRectSize; a++)
                 {
                     //checks left row
-                    for (int l = lFoundWater ? 0 : dOff; l < dOff + 1; l++)//only checks bottom block if no liquid was found
+                    for (int l = (lFoundWater ? 0 : dOff); l < dOff + 2; l++)//only checks bottom block if no liquid was found
                     {
-                        Tile tile = Main.tile[surfaceOrigin.X - lOff, surfaceOrigin.Y + l];
-                        if (WaterPassThough(tile) && tile.LiquidType == LiquidID.Water && tile.LiquidAmount > minLiquid)
+                        Tile tile = Main.tile[(surfaceOrigin.X - lOff) - 1, surfaceOrigin.Y + l];
+                        if (ValidLiquidTile(tile))
                         {
-                            lOff++;
+                            //WorldGen.PlaceWall((surfaceOrigin.X - lOff) - 1, surfaceOrigin.Y + l, WallID.AmethystGemspark, true);
                             lFoundWater = true;
+                            lOff++;
                             break;
                         }
                         else
@@ -131,28 +145,30 @@ namespace SuperUltraFishing
                     }
 
                     //checks right row
-                    for (int r = rFoundWater ? 0 : dOff; r < dOff + 1; r++)//only checks bottom block if no liquid was found
+                    for (int r = (rFoundWater ? 0 : dOff); r < dOff + 2; r++)//only checks bottom block if no liquid was found
                     {
-                        Tile tile = Main.tile[surfaceOrigin.X + rOff, surfaceOrigin.Y + r];
-                        if (WaterPassThough(tile) && tile.LiquidType == LiquidID.Water && tile.LiquidAmount > minLiquid)
+                        Tile tile = Main.tile[(surfaceOrigin.X + rOff) + 1, surfaceOrigin.Y + r];
+                        if (ValidLiquidTile(tile))
                         {
-                            rOff++;
+                            //WorldGen.PlaceWall((surfaceOrigin.X + rOff) + 1, surfaceOrigin.Y + r, WallID.EmeraldGemspark, true);
                             rFoundWater = true;
+                            rOff++;
                             break;
                         }
                         else
-                            lFoundWater = false;
+                            rFoundWater = false;
                     }
 
                     //checks bottom row
                     if (dFoundWater)
                         for (int d = 0; d < lOff + rOff + 1; d++)
                         {
-                            Tile tile = Main.tile[(surfaceOrigin.X - lOff) + d, surfaceOrigin.Y + dOff];
-                            if (WaterPassThough(tile) && tile.LiquidType == LiquidID.Water && tile.LiquidAmount > minLiquid)
+                            Tile tile = Main.tile[(surfaceOrigin.X - lOff) + d, surfaceOrigin.Y + dOff + 1];
+                            if (ValidLiquidTile(tile))
                             {
-                                dOff++;
+                                //WorldGen.PlaceWall((surfaceOrigin.X - lOff) + d, surfaceOrigin.Y + dOff + 1, WallID.SapphireGemspark, true);
                                 dFoundWater = true;
+                                dOff++;
                                 break;
                             }
                             else
@@ -160,87 +176,180 @@ namespace SuperUltraFishing
                         }
                     else//only checks under each side bar if no water was found
                     {
-                        Tile ltile = Main.tile[(surfaceOrigin.X - lOff), surfaceOrigin.Y + dOff + 1];
-                        Tile rtile = Main.tile[(surfaceOrigin.X + rOff), surfaceOrigin.Y + dOff + 1];
-                        if((WaterPassThough(ltile) && ltile.LiquidType == LiquidID.Water && ltile.LiquidAmount > minLiquid) ||
-                            WaterPassThough(rtile) && rtile.LiquidType == LiquidID.Water && rtile.LiquidAmount > minLiquid)
+                        Tile ltile = Main.tile[(surfaceOrigin.X - lOff) - 1, surfaceOrigin.Y + dOff + 2];
+                        Tile rtile = Main.tile[(surfaceOrigin.X + rOff) + 1, surfaceOrigin.Y + dOff + 2];
+                        if ((ValidLiquidTile(ltile)) ||
+                            ValidLiquidTile(rtile))
                         {
+                            //WorldGen.PlaceWall((surfaceOrigin.X - lOff) - 1, surfaceOrigin.Y + dOff + 2, WallID.RubyGemspark, true);
+                            //WorldGen.PlaceWall((surfaceOrigin.X + rOff) - 1, surfaceOrigin.Y + dOff + 2, WallID.RubyGemsparkOff, true);
                             dOff++;
                             dFoundWater = true;
-                            break;
                         }
                     }
+
+                    if(!lFoundWater && !rFoundWater && !dFoundWater)
+                        break;
                 }
 
-                    (BasicTile tile, bool check)[,] array = new (BasicTile tile, bool check)[maxLakeSize, maxLakeSize];
-                int xArrayCenter = maxLakeSize / 2;
-                HashSet<Point16> 
+                Rectangle waterRect = new Rectangle((surfaceOrigin.X - lOff) - wallBuffer, (surfaceOrigin.Y - 1) - wallBuffer, lOff + rOff + 1 + (wallBuffer * 2), dOff + 1 + (wallBuffer * 2));
+                return waterRect;
             }
             else
-                return null;//invalid origin
-        }
-
-        public void CaptureWorldArea(Point16 point1, Point16 point2)
-        {
-            int width = Math.Abs(point1.X - point2.X);
-            int height = Math.Abs(point1.Y - point2.Y);
-            Vector3 center = new Vector3((AreaSizeX / 2) - (width / 2), (AreaSizeY / 2) - (height / 2), AreaSizeZ / 2);
-            for (int i = 0; i < width; i++)
             {
-                bool rowHasTile = false;
-                bool hasgap = false;
-                Point16 firstTile = Point16.Zero;
-                Point16 secondTile = Point16.Zero;
-
-                for (int j = 0; j < height; j++)
-                {
-                    int xoffset = (int)center.X + i;
-                    int yoffset = (int)center.Y + j;
-                    int zoffset = (int)center.Z;
-
-                    Tile vanillaTile = Main.tile[point1.X + i, point2.Y - j];
-
-                    if (vanillaTile.HasTile)
-                        rowHasTile = true;
-                    else
-                        hasgap = true;
-
-                    AreaArray[xoffset, yoffset, zoffset] = new BasicTile()
-                    {
-                        Active = vanillaTile.HasTile,
-                        TileType = vanillaTile.TileType,
-                        BlockType = vanillaTile.BlockType,
-                        Color = vanillaTile.TileColor
-                    };
-                }
+                Error = "Invalid Origin";
+                return null;
             }
         }
 
-        public void GenerateWorld()
+        public List<(Point16 center, int total)> WaterBodyScan(Rectangle worldArea)
         {
-            AreaArray = new BasicTile[AreaSizeX, AreaSizeY, AreaSizeZ];
-            //if (AreaArray == null || 
-            //    AreaSizeX != AreaArray.GetLength(0) ||  AreaSizeY != AreaArray.GetLength(1) ||  AreaSizeZ != AreaArray.GetLength(2))
-            //        AreaArray = new BasicTile[AreaSizeX, AreaSizeY, AreaSizeZ];
 
-            //for (int x = 0; x < AreaSizeX; x++)
+            HashSet<Point> checkedPoints = new HashSet<Point>();
+
+            List<(Point16 center, int total)> waterBodyList = new List<(Point16 center, int total)>();
+
+            for (int i = 0; i < worldArea.Width; i++)
+            {
+                for (int j = 0; j < worldArea.Height; j++)
+                {
+                    Point position = new Point(worldArea.X + i, worldArea.Y + j);
+                    if (ValidLiquidTile(Main.tile[position]) && !checkedPoints.Contains(position))
+                        waterBodyList.Add(CrawlWaterBody(position, checkedPoints));
+                }
+            }
+
+
+            return waterBodyList;
+        }
+
+        public const int MaxCheckedWaterTiles = 8000;
+        public (Point16 center, int total) CrawlWaterBody(Point startPosition, HashSet<Point> checkedPoints)
+        {
+            List<Point> pointAverageList = new List<Point>();//later this will be used to average each point
+            Queue<Point> checkSurroundQueue = new Queue<Point>();//queue of tiles to have their surroundings checked
+
+            //starts out by adding start position to each list since its a known correct tile
+            pointAverageList.Add(startPosition);
+            checkSurroundQueue.Enqueue(startPosition);
+            checkedPoints.Add(startPosition);
+
+            int totalWater = 0;//could use the pointAverageList count instead
+
+            for (int i = 0; i < MaxCheckedWaterTiles; i++)
+            {
+                if (checkSurroundQueue.Count == 0)
+                    break;
+
+                Point pos = checkSurroundQueue.Dequeue();
+
+                CheckAddWaterTile(pos + new Point(0, -1));
+                CheckAddWaterTile(pos + new Point(1, 0));
+                CheckAddWaterTile(pos + new Point(0, 1));
+                CheckAddWaterTile(pos + new Point(-1, 0));
+            }
+
+            void CheckAddWaterTile(Point pos)
+            {
+                if(!checkedPoints.Contains(pos) && ValidLiquidTile(Main.tile[pos]))
+                {
+                    checkedPoints.Add(pos);
+                    checkSurroundQueue.Enqueue(pos);
+                    pointAverageList.Add(pos);
+                    totalWater++;
+                }
+            }
+
+            if (checkSurroundQueue.Count != 0)
+                Error = "Body of water too large, result may not be complete";
+
+            Point average = Point.Zero;
+
+            foreach (Point nxtPos in pointAverageList)
+                average += nxtPos;
+
+            int count = pointAverageList.Count();
+            average /= new Point(count, count);
+
+            return (average.ToVector2().ToPoint16(), totalWater);
+        }
+
+        public void CaptureWorldArea(Rectangle worldArea)
+        {
+            AreaSizeX = worldArea.Width + 20;
+            AreaSizeZ = worldArea.Width + 20;
+            AreaSizeY = worldArea.Height + 20;
+
+            AreaArray = new BasicTile[AreaSizeX, AreaSizeY, AreaSizeZ];
+
+
+
+            Point16 centerOffset = new Point16((worldArea.Width / 2), (worldArea.Height / 2));
+            Vector3 center = new Vector3((AreaSizeX / 2) - centerOffset.X, (AreaSizeY / 2) - centerOffset.Y, AreaSizeZ / 2);
+
+            FastNoise.FastNoise noise = new FastNoise.FastNoise((int)Main.GameUpdateCount);
+
+            //for (int i = 0; i < worldArea.Width; i++)
             //{
-            //    for (int y = 0; y < AreaSizeY; y++)
+            //    for (int j = 0; j < worldArea.Height; j++)
             //    {
-            //        for (int z = 0; z < AreaSizeZ; z++)
+            //        int xoffset = ((int)center.X + i) - centerOffset.X;
+            //        int yoffset = ((int)center.Y + j) - centerOffset.Y;
+            //        int zoffset = (int)center.Z;
+
+            //        Tile vanillaTile = Main.tile[worldArea.X + i, (worldArea.Height + worldArea.Y) - j];
+
+            //        AreaArray[xoffset, yoffset, zoffset] = new BasicTile()
             //        {
-                        //AreaArray[x, y, z].Active = false;
-                        //if (x == 0 || y == 0 || z == 0 || x == AreaSizeX - 1 || z == AreaSizeZ - 1)
-                        //    AreaArray[x, y, z].Active = true;
-                        //else
-                        //    AreaArray[x, y, z].Active = false;
-                        //AreaArray[x, y, z].Active = (x % 5 == 0 || y % 3 == 0 || z % 7 == 0);
-                        //AreaArray[x, y, z].Active = false;
-            //        }
+            //            Active = vanillaTile.HasTile,
+            //            TileType = vanillaTile.TileType,
+            //            BlockType = vanillaTile.BlockType,
+            //            Color = vanillaTile.TileColor
+            //        };
             //    }
             //}
 
+            for (int i = 0; i < AreaSizeX; i++)
+            {
+                for (int j = 0; j < AreaSizeY; j++)
+                {
+                    for (int k = 0; k < AreaSizeZ; k++)
+                    {
+                        int scale = 3;
+                        float noiseVal = noise.GetCubicFractal(i * scale, j * scale, k * scale) * 25;
+                        AreaArray[i, j, k] = new BasicTile()
+                        {
+                            Active = noiseVal > 0.5f,
+                            TileType = noiseVal < 0.75f ? TileID.Obsidian : TileID.MythrilBrick,
+                        };
+                    }
+                }
+            }
+
+            AreaArray[(int)center.X, (int)center.Y, (int)center.Z] = new BasicTile()
+            {
+                Active = true,
+                TileType = TileID.LunarOre
+            };
+        }
+
+        public bool GenerateWorld(Point16 worldLocation)
+        {
+            Error = "";
+            WorldGenerated = false;
+            LastWorldLocation = worldLocation;
+
+            Rectangle? worldrect = FindWorldRect(worldLocation);
+
+            if (worldrect == null)
+                return false;
+
+            //List<(Point16 center, int total)> waterBodyList = WaterBodyScan(worldrect.Value);
+
+            CaptureWorldArea(worldrect.Value);
+
             WorldGenerated = true;
+            return true;
         }
     }
 }

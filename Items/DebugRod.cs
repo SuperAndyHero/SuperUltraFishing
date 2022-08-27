@@ -1,6 +1,8 @@
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using static Terraria.ModLoader.ModContent;
 
 namespace SuperUltraFishing.Items
 {
@@ -35,5 +37,12 @@ namespace SuperUltraFishing.Items
 			recipe.AddTile(TileID.WorkBenches);
 			recipe.Register();
 		}
-	}
+
+        public override bool? UseItem(Player player)
+        {
+			GetInstance<FishingUIWindow>().ActivateWindow((Main.MouseWorld / 16).ToPoint16());
+
+			return true;
+        }
+    }
 }

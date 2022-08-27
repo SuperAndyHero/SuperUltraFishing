@@ -146,6 +146,7 @@ namespace SuperUltraFishing
                         BasicTile tile = world.AreaArray[x, y, z];
                         if (!tile.Active)
                             continue;
+                        Main.instance.LoadTiles(tile.TileType);//ensures the tile is loaded, likely not needed in normal gameplay
                         Texture2D tileTexture = Terraria.GameContent.TextureAssets.Tile[tile.TileType].Value;
 
                         float colorMult = 1f;// new Vector3(x, y, z).Length() / new Vector3(sizeX, sizeY, sizeZ).Length();

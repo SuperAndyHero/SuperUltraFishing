@@ -36,6 +36,24 @@ namespace SuperUltraFishing
             rendering = GetInstance<Rendering>();
         }
 
+        public void ActivateWindow(Point16 worldLocation)
+        {
+            bool successful = world.GenerateWorld(worldLocation);
+
+            if(!string.IsNullOrEmpty(world.Error))
+                Main.NewText("Error: " + world.Error, Color.IndianRed);
+
+            if (!successful)
+                return;
+
+            rendering.BuildVertexBuffer();
+            rendering.ResetCamera();
+
+
+            Main.NewText("Starting window");
+            WindowActive = true;
+        }
+
         //draw UI and render target to screen
         public override void PostDrawInterface(SpriteBatch spriteBatch)
         {
@@ -76,14 +94,7 @@ namespace SuperUltraFishing
             //start window
             if (Main.keyState.IsKeyDown(Keys.NumPad8) && !Main.oldKeyState.IsKeyDown(Keys.NumPad8))
             {
-                world.GenerateWorld();
-                world.CaptureWorldArea(selectedPointA, selectedPointB);
-                rendering.BuildVertexBuffer();
-                rendering.ResetCamera();
-                
-
-                Main.NewText("Starting window");
-                WindowActive = true;
+                ActivateWindow((Main.MouseWorld / 16).ToPoint16());
             }
 
             //toggle window active
@@ -97,6 +108,11 @@ namespace SuperUltraFishing
 
             if (WindowActive)
             {
+                //Close window with escape
+                //todo: add confirm message
+                if (Main.keyState.IsKeyDown(Keys.Escape) && !Main.oldKeyState.IsKeyDown(Keys.Escape))
+                    WindowActive = false;
+
                 Main.LocalPlayer.frozen = true;
                 Main.cursorScale = 0;
 
@@ -104,8 +120,7 @@ namespace SuperUltraFishing
                 if (Main.keyState.IsKeyDown(Keys.NumPad0) && !Main.oldKeyState.IsKeyDown(Keys.NumPad0))
                 {
                     Main.NewText("Regenerated Tile Array");
-                    world.GenerateWorld();
-                    world.CaptureWorldArea(selectedPointA, selectedPointB);
+                    world.GenerateWorld(world.LastWorldLocation);
                 }
 
                 //build vertex buffer
