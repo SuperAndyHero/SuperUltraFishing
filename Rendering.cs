@@ -93,7 +93,8 @@ namespace SuperUltraFishing
                 if (VertexBufferBuilt)
                 {
                     basicEffect.View = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
-                    foreach(KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
+                    basicEffect.TextureEnabled = true;
+                    foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
                     {
                         basicEffect.Texture = pair.Key;
                         basicEffect.CurrentTechnique.Passes[0].Apply();

@@ -202,12 +202,13 @@ namespace SuperUltraFishing
             }
         }
 
-        public List<(Point16 center, int total)> WaterBodyScan(Rectangle worldArea)
+        public (Dictionary<Point, float> TilePosDist, List<(Point16 center, int waterCount)>) WaterBodyScan(Rectangle worldArea)
         {
 
             HashSet<Point> checkedPoints = new HashSet<Point>();
 
-            List<(Point16 center, int total)> waterBodyList = new List<(Point16 center, int total)>();
+            Dictionary<Point, float> CombinedDict = new Dictionary<Point, float>();
+            List<(Point16 center, int count)> waterBodyList = new List<(Point16 center, int count)>();
 
             for (int i = 0; i < worldArea.Width; i++)
             {
@@ -215,22 +216,37 @@ namespace SuperUltraFishing
                 {
                     Point position = new Point(worldArea.X + i, worldArea.Y + j);
                     if (ValidLiquidTile(Main.tile[position]) && !checkedPoints.Contains(position))
-                        waterBodyList.Add(CrawlWaterBody(position, checkedPoints));
+                    {
+                        (List<KeyValuePair<Point, float>> WaterPosDist, (Point16 center, int waterCount)) = CrawlWaterBody(position, checkedPoints, worldArea);
+                        WaterPosDist.ForEach(x => CombinedDict[x.Key] = x.Value);
+                        waterBodyList.Add((center, WaterPosDist.Count()));
+                    }
                 }
             }
 
-
-            return waterBodyList;
+            return (CombinedDict, waterBodyList);
         }
 
         public const int MaxCheckedWaterTiles = 8000;
-        public (Point16 center, int total) CrawlWaterBody(Point startPosition, HashSet<Point> checkedPoints)
+        public const int surroundTilesForGround = 12;
+
+        public (List<KeyValuePair<Point, float>> TilePosDist, (Point16 center, int waterCount)) CrawlWaterBody(Point startPosition, HashSet<Point> checkedPoints, Rectangle worldArea)
         {
-            List<Point> pointAverageList = new List<Point>();//later this will be used to average each point
+            //location of every tile that gets it's grounded tile distance calculated, this includes grounded tiles
+            List<Point> tileLocationList = new List<Point>();
+
+            //every tile connected to ground, used to calculate the distance from
+            List<Point> groundedLocationList = new List<Point>();
+
+            //the distance of every water tile from the closest grounded tile
+            List<KeyValuePair<Point, float>> tileGroundDistance = new List<KeyValuePair<Point, float>>();//this gets returned
+
             Queue<Point> checkSurroundQueue = new Queue<Point>();//queue of tiles to have their surroundings checked
 
+            Point average = Point.Zero;
+
             //starts out by adding start position to each list since its a known correct tile
-            pointAverageList.Add(startPosition);
+            tileLocationList.Add(startPosition);
             checkSurroundQueue.Enqueue(startPosition);
             checkedPoints.Add(startPosition);
 
@@ -251,85 +267,185 @@ namespace SuperUltraFishing
 
             void CheckAddWaterTile(Point pos)
             {
-                if(!checkedPoints.Contains(pos) && ValidLiquidTile(Main.tile[pos]))
+                if(!checkedPoints.Contains(pos))
                 {
-                    checkedPoints.Add(pos);
-                    checkSurroundQueue.Enqueue(pos);
-                    pointAverageList.Add(pos);
-                    totalWater++;
+                    if (ValidLiquidTile(Main.tile[pos]))
+                    {
+                        checkedPoints.Add(pos);
+                        checkSurroundQueue.Enqueue(pos);
+                        average += pos;
+                        totalWater++;
+                    }
+                    else
+                    {
+                        //only adds to ground list if a tile is considered part of the ground
+                        //this could attach a bool instead if needed
+                        int totalSurround = 0;
+                        CheckTileLine(new Point(0, -1));
+                        CheckTileLine(new Point(1, 0));
+                        CheckTileLine(new Point(0, 1));
+                        CheckTileLine(new Point(-1, 0));
+
+                        void CheckTileLine(Point offset)
+                        {
+                            for (int u = 0; u < surroundTilesForGround; u++)
+                            {
+                                Point offsetPoint = pos + (offset * new Point(u, u));
+                                //if this tile is outside the total bounding box immediately consider the base tile part of the ground
+                                if (!worldArea.Contains(offsetPoint))
+                                    totalSurround += surroundTilesForGround;
+                                //adds to total if tile is water blocking, else it stops
+                                if (totalSurround >= surroundTilesForGround || WaterPassThough(Main.tile[offsetPoint]))
+                                    break;
+                                else
+                                    totalSurround++;
+                            }
+                        }
+
+                        if(totalSurround >= surroundTilesForGround)
+                            groundedLocationList.Add(pos);
+                    }
+
+                    tileLocationList.Add(pos);//grounded, floating, and water tiles are all added to this list
                 }
             }
 
             if (checkSurroundQueue.Count != 0)
                 Error = "Body of water too large, result may not be complete";
 
-            Point average = Point.Zero;
+            foreach (Point waterPos in tileLocationList)
+            {
+                float nearestPoint = float.MaxValue;
+                foreach(Point groundPos in groundedLocationList)
+                {
+                    float distance = Vector2.Distance(waterPos.ToVector2(), groundPos.ToVector2());
+                    if (distance < nearestPoint)
+                        nearestPoint = distance;
+                }
+                tileGroundDistance.Add(new KeyValuePair<Point, float>(waterPos, nearestPoint));
+            }
 
-            foreach (Point nxtPos in pointAverageList)
-                average += nxtPos;
+            average /= new Point(totalWater, totalWater);
 
-            int count = pointAverageList.Count();
-            average /= new Point(count, count);
-
-            return (average.ToVector2().ToPoint16(), totalWater);
+            return (tileGroundDistance, (average.ToVector2().ToPoint16(), totalWater));
         }
 
+        //temp name
         public void CaptureWorldArea(Rectangle worldArea)
         {
-            AreaSizeX = worldArea.Width + 20;
-            AreaSizeZ = worldArea.Width + 20;
-            AreaSizeY = worldArea.Height + 20;
+            AreaSizeX = worldArea.Width + 5;
+            AreaSizeZ = worldArea.Width + 5;
+            AreaSizeY = worldArea.Height + 5;
 
             AreaArray = new BasicTile[AreaSizeX, AreaSizeY, AreaSizeZ];
 
 
 
             Point16 centerOffset = new Point16((worldArea.Width / 2), (worldArea.Height / 2));
-            Vector3 center = new Vector3((AreaSizeX / 2) - centerOffset.X, (AreaSizeY / 2) - centerOffset.Y, AreaSizeZ / 2);
+            Vector3 areaCenter = new Vector3((AreaSizeX / 2), (AreaSizeY / 2), AreaSizeZ / 2);
+            Vector3 worldAreaCorner = areaCenter - new Vector3(centerOffset.X, centerOffset.Y, 0);
 
             FastNoise.FastNoise noise = new FastNoise.FastNoise((int)Main.GameUpdateCount);
 
-            //for (int i = 0; i < worldArea.Width; i++)
-            //{
-            //    for (int j = 0; j < worldArea.Height; j++)
-            //    {
-            //        int xoffset = ((int)center.X + i) - centerOffset.X;
-            //        int yoffset = ((int)center.Y + j) - centerOffset.Y;
-            //        int zoffset = (int)center.Z;
+            (Dictionary<Point, float> TilePositonDistance, List<(Point16 center, int waterCount)> WaterBodyCenterCount) = WaterBodyScan(worldArea);
 
-            //        Tile vanillaTile = Main.tile[worldArea.X + i, (worldArea.Height + worldArea.Y) - j];
-
-            //        AreaArray[xoffset, yoffset, zoffset] = new BasicTile()
-            //        {
-            //            Active = vanillaTile.HasTile,
-            //            TileType = vanillaTile.TileType,
-            //            BlockType = vanillaTile.BlockType,
-            //            Color = vanillaTile.TileColor
-            //        };
-            //    }
-            //}
-
-            for (int i = 0; i < AreaSizeX; i++)
+            float MaxVal = 0;
+            foreach(var pair in TilePositonDistance)
             {
-                for (int j = 0; j < AreaSizeY; j++)
+                if (pair.Value > MaxVal)
+                    MaxVal = pair.Value;
+
+            }
+
+            int lastTileType = 0;
+            for (int j = 0; j < worldArea.Height; j++)
+            {
+                for (int i = 0; i < worldArea.Width; i++)
                 {
-                    for (int k = 0; k < AreaSizeZ; k++)
+
+                    int xoffset = ((int)worldAreaCorner.X + i);
+                    int yoffset = ((int)worldAreaCorner.Y + j);
+                    int zoffset = (int)worldAreaCorner.Z;
+
+                    Point position = new Point(worldArea.X + i, (worldArea.Height + worldArea.Y) - j);
+                    Tile vanillaTile = Main.tile[position];
+
+                    AreaArray[xoffset, yoffset, zoffset] = new BasicTile()
                     {
-                        int scale = 3;
-                        float noiseVal = noise.GetCubicFractal(i * scale, j * scale, k * scale) * 25;
-                        AreaArray[i, j, k] = new BasicTile()
+                        Active = vanillaTile.HasTile,
+                        TileType = vanillaTile.TileType,
+                        BlockType = vanillaTile.BlockType,
+                        Color = vanillaTile.TileColor
+                    };
+
+                    if (j < worldArea.Height - wallBuffer)
+                    {
+                        bool validValue = TilePositonDistance.TryGetValue(position, out float distance);
+                        for (int k = 0; k < worldArea.Width / 2; k++)
                         {
-                            Active = noiseVal > 0.5f,
-                            TileType = noiseVal < 0.75f ? TileID.Obsidian : TileID.MythrilBrick,
-                        };
+                            bool inDistance = k + 1 > distance;
+                            if (inDistance && k < 1)
+                                lastTileType = vanillaTile.TileType;
+                            AreaArray[xoffset, yoffset, zoffset + k + 1] = new BasicTile()
+                            {   
+                                Active = !validValue || inDistance,
+                                TileType = lastTileType,
+                                BlockType = vanillaTile.BlockType,
+                                Color = vanillaTile.TileColor
+                            };
+                        }
+
+                        for (int k = 1; k < worldArea.Width / 2; k++)
+                        {
+
+                            float scale = 7f;
+                            float noiseVal = Math.Abs(noise.GetCubicFractal(xoffset * scale, yoffset * (scale * 2), (zoffset - k) * (scale * 2)) * 5);
+
+                            bool inDistance = ((((float)k / ((float)worldArea.Width * 0.15f)) * noiseVal)) > (distance / (MaxVal + 1));
+
+                            if (inDistance && (k - 1) < 1)
+                                lastTileType = vanillaTile.TileType;
+
+                            AreaArray[xoffset, yoffset, zoffset - k] = new BasicTile()
+                            {
+                                Active = !validValue || inDistance,
+                                TileType = lastTileType,
+                                BlockType = vanillaTile.BlockType,
+                                Color = vanillaTile.TileColor
+                            };
+                        }
                     }
                 }
             }
 
-            AreaArray[(int)center.X, (int)center.Y, (int)center.Z] = new BasicTile()
+            //for (int i = 0; i < AreaSizeX; i++)
+            //{
+            //    for (int j = 0; j < AreaSizeY; j++)
+            //    {
+            //        for (int k = 0; k < AreaSizeZ; k++)
+            //        {
+            //            int scale = 3;
+            //            float noiseVal = noise.GetCubicFractal(i * scale, j * scale, k * scale) * 25;
+            //            AreaArray[i, j, k] = new BasicTile()
+            //            {
+            //                Active = noiseVal > 0.5f,
+            //                TileType = noiseVal < 0.75f ? TileID.Obsidian : TileID.MythrilBrick,
+            //            };
+            //        }
+            //    }
+            //}
+
+            AreaArray[(int)areaCenter.X, (int)areaCenter.Y, (int)areaCenter.Z] = new BasicTile()
             {
                 Active = true,
                 TileType = TileID.LunarOre
+            };
+
+
+            AreaArray[(int)worldAreaCorner.X, (int)worldAreaCorner.Y, (int)worldAreaCorner.Z] = new BasicTile()
+            {
+                Active = true,
+                TileType = TileID.SolarBrick
             };
         }
 
@@ -346,7 +462,7 @@ namespace SuperUltraFishing
 
             //List<(Point16 center, int total)> waterBodyList = WaterBodyScan(worldrect.Value);
 
-            CaptureWorldArea(worldrect.Value);
+            CaptureWorldArea(worldrect.Value);//temp name
 
             WorldGenerated = true;
             return true;
