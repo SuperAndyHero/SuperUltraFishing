@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,8 @@ namespace SuperUltraFishing
         public bool Active = false;
 
         public int TileType = 0;
+
+        public Vector2 TileFrame = Vector2.Zero;//used for frame important tiles only
 
         public BlockType BlockType = BlockType.Solid;
 

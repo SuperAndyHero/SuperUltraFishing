@@ -94,7 +94,7 @@ namespace SuperUltraFishing
             //start window
             if (Main.keyState.IsKeyDown(Keys.NumPad8) && !Main.oldKeyState.IsKeyDown(Keys.NumPad8))
             {
-                ActivateWindow((Main.MouseWorld / 16).ToPoint16());
+
             }
 
             //toggle window active

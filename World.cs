@@ -375,7 +375,9 @@ namespace SuperUltraFishing
                         Active = vanillaTile.HasTile,
                         TileType = vanillaTile.TileType,
                         BlockType = vanillaTile.BlockType,
-                        Color = vanillaTile.TileColor
+                        Color = vanillaTile.TileColor,
+                        TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY)
+
                     };
 
                     if (j < worldArea.Height - wallBuffer)
@@ -384,26 +386,27 @@ namespace SuperUltraFishing
                         for (int k = 0; k < worldArea.Width / 2; k++)
                         {
                             bool inDistance = k + 1 > distance;
-                            if (inDistance && k < 1)
+                            if (!validValue)
                                 lastTileType = vanillaTile.TileType;
                             AreaArray[xoffset, yoffset, zoffset + k + 1] = new BasicTile()
                             {   
                                 Active = !validValue || inDistance,
                                 TileType = lastTileType,
                                 BlockType = vanillaTile.BlockType,
-                                Color = vanillaTile.TileColor
+                                Color = vanillaTile.TileColor,
+                                TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY)
                             };
                         }
 
                         for (int k = 1; k < worldArea.Width / 2; k++)
                         {
 
-                            float scale = 7f;
-                            float noiseVal = Math.Abs(noise.GetCubicFractal(xoffset * scale, yoffset * (scale * 2), (zoffset - k) * (scale * 2)) * 5);
+                            float scale = 5f;
+                            float noiseVal = Math.Abs(noise.GetCubicFractal(xoffset * scale, yoffset * (scale * 2), (zoffset - k) * (scale * 2)) * 20);
 
-                            bool inDistance = ((((float)k / ((float)worldArea.Width * 0.15f)) * noiseVal)) > (distance / (MaxVal + 1));
-
-                            if (inDistance && (k - 1) < 1)
+                            //bool inDistance = ((float)(k * 0.75f) - noiseVal) > (distance);
+                            bool inDistance = ((float)(k * 0.1f) - noiseVal) > (distance);
+                            if (!validValue)
                                 lastTileType = vanillaTile.TileType;
 
                             AreaArray[xoffset, yoffset, zoffset - k] = new BasicTile()
@@ -411,7 +414,8 @@ namespace SuperUltraFishing
                                 Active = !validValue || inDistance,
                                 TileType = lastTileType,
                                 BlockType = vanillaTile.BlockType,
-                                Color = vanillaTile.TileColor
+                                Color = vanillaTile.TileColor,
+                                TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY)
                             };
                         }
                     }

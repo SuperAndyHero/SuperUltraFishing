@@ -30,6 +30,7 @@ namespace SuperUltraFishing
 
         public Dictionary<Texture2D, List<VertexPositionColorTexture>> TextureVertices = new Dictionary<Texture2D, List<VertexPositionColorTexture>>();
         public Dictionary<Texture2D, VertexBuffer> TextureBuffers = new Dictionary<Texture2D, VertexBuffer>();
+        //public Dictionary<Texture2D, Color> TextureColor = new Dictionary<Texture2D, Color>();
 
         public Vector3 CameraPosition = Vector3.Zero;
         public float CameraYaw = 0;
@@ -40,6 +41,8 @@ namespace SuperUltraFishing
         private World world;
         private FishingUIWindow fishingUIWindow;
 
+        public static Color[] colorLookup;
+
         public override void PostAddRecipes()
         {
             world = GetInstance<World>();
@@ -47,6 +50,9 @@ namespace SuperUltraFishing
         }
         public override void Load()
         {
+            FieldInfo fieldInfo = typeof(Terraria.Map.MapHelper).GetField("colorLookup", BindingFlags.NonPublic | BindingFlags.Static);
+            colorLookup = (Color[])fieldInfo.GetValue(null);
+
             Main.QueueMainThreadAction(() =>
             {
                 if (!Main.dedServ)
@@ -93,6 +99,17 @@ namespace SuperUltraFishing
                 if (VertexBufferBuilt)
                 {
                     basicEffect.View = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
+                    basicEffect.VertexColorEnabled = true;
+                    basicEffect.TextureEnabled = false;
+                    foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
+                    {
+                        basicEffect.Texture = pair.Key;
+                        basicEffect.CurrentTechnique.Passes[0].Apply();
+                        Main.graphics.GraphicsDevice.SetVertexBuffer(pair.Value);
+                        Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
+                    }
+
+                    basicEffect.VertexColorEnabled = false;
                     basicEffect.TextureEnabled = true;
                     foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
                     {
@@ -151,7 +168,18 @@ namespace SuperUltraFishing
                         Texture2D tileTexture = Terraria.GameContent.TextureAssets.Tile[tile.TileType].Value;
 
                         float colorMult = 1f;// new Vector3(x, y, z).Length() / new Vector3(sizeX, sizeY, sizeZ).Length();
-                        Color color = Color.White * colorMult;
+                        Color color;//Color.White * colorMult
+
+                        ushort ltile = Terraria.Map.MapHelper.tileLookup[tile.TileType];
+
+                        if(ltile >= colorLookup.Length)
+                        {
+                            color = colorLookup[tile.TileType] * colorMult;
+                        }
+                        else
+                        {
+                            color = colorLookup[ltile] * colorMult;
+                        }
 
                         if (!(x + 1 < sizeX) || !world.AreaArray[x + 1, y, z].Active)
                             AddQuad(new Vector3(x, y, z), new Vector3(0, 0, -(float)Math.PI / 2), color, tileTexture);
