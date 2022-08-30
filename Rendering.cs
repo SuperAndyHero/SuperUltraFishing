@@ -143,7 +143,7 @@ namespace SuperUltraFishing
             VertexBufferBuilt = true;
         }
 
-        private void BuildTileMesh()
+        private void BuildTileMesh()//todo: maybe bake the lighting in?
         {
             if (!world.WorldGenerated)
             {
@@ -173,33 +173,33 @@ namespace SuperUltraFishing
                         ushort ltile = Terraria.Map.MapHelper.tileLookup[tile.TileType];
 
                         if(ltile >= colorLookup.Length)
-                        {
                             color = colorLookup[tile.TileType] * colorMult;
-                        }
                         else
-                        {
                             color = colorLookup[ltile] * colorMult;
-                        }
 
+                        //right
                         if (!(x + 1 < sizeX) || !world.AreaArray[x + 1, y, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, -(float)Math.PI / 2), color, tileTexture);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, -(float)Math.PI / 2), color, tileTexture, tile.TileFrame);
 
+                        //left
                         if (!(x - 1 >= 0) || !world.AreaArray[x - 1, y, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, (float)Math.PI / 2), color, tileTexture);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, (float)Math.PI / 2), color, tileTexture, tile.TileFrame);
 
-
+                        //top
                         if (!(y + 1 < sizeY) || !world.AreaArray[x, y + 1, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), color, tileTexture);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), color, tileTexture, tile.TileFrame);
 
+                        //bottom
                         if (!(y - 1 >= 0) || !world.AreaArray[x, y - 1, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), color, tileTexture);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), color, tileTexture, tile.TileFrame);
 
-
+                        //front (correct)
                         if (!(z + 1 < sizeZ) || !world.AreaArray[x, y, z + 1].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), color, tileTexture);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), color, tileTexture, tile.TileFrame);
 
+                        //back (correct)
                         if (!(z - 1 >= 0) || !world.AreaArray[x, y, z - 1].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, -(float)Math.PI / 2, 0), color, tileTexture);
+                            AddQuad(new Vector3(x, y, z), new Vector3((float)Math.PI / 2, (float)Math.PI / 2, -(float)Math.PI / 2), color, tileTexture, tile.TileFrame, SpriteEffects.FlipHorizontally);
                     }
                 }
             }

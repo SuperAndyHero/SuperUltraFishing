@@ -155,14 +155,15 @@ namespace SuperUltraFishing
                     rendering.CameraYaw -= 0.015f;
 
                 Vector3 newDir = Vector3.Zero;
+                float moveAmount = Main.keyState.IsKeyDown(Keys.LeftShift) ? 3 : 1;
                 if (Main.keyState.IsKeyDown(Keys.S))
-                    newDir.Z += 1;
+                    newDir.Z += moveAmount;
                 if (Main.keyState.IsKeyDown(Keys.W))
-                    newDir.Z -= 1;
+                    newDir.Z -= moveAmount;
                 if (Main.keyState.IsKeyDown(Keys.A))
-                    newDir.X -= 1;
+                    newDir.X -= moveAmount;
                 if (Main.keyState.IsKeyDown(Keys.D))
-                    newDir.X += 1;
+                    newDir.X += moveAmount;
 
                 rendering.CameraPosition += Vector3.Transform(newDir, Matrix.CreateFromYawPitchRoll(rendering.CameraYaw, rendering.CameraPitch, 0));
 
