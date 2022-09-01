@@ -35,6 +35,7 @@ namespace SuperUltraFishing
             AreaArray[x, y, z].Active = true;
         }
 
+        //unused and imcomplete
         public void RemoveWorld()//unload world
         {
             AreaArray = null;
@@ -358,7 +359,10 @@ namespace SuperUltraFishing
 
             }
 
-            //TODO: find why there is a full front and back wall if there is a side wall
+            //TODO: make sure the pool is round in any pool size
+            //TODO: increase cubic noise amplitude when poolsize is larger
+            //Later todo: find out why water passable tiles set set as the last valid tile
+            //Later todo: set Z distance to max when edge of world has been met
 
             int lastTileType = 1;
             for (int j = 0; j < worldArea.Height; j++)
@@ -427,7 +431,7 @@ namespace SuperUltraFishing
                             int zoffset = (int)worldAreaCorner.Z + k + 1;
                             float noiseVal = Math.Abs(noise.GetCubicFractal(xoffset * featureScale, yoffset * (featureScale * (!belowWaterHeight ? 0.5f : 2)), zoffset * (featureScale * 2)) * 20);
 
-                            bool inDistance = zoffset == (AreaSizeZ - 1) ||
+                            bool inDistance =
                                 ((float)(k * widthMultiplier) - noiseVal) > (aboveWaterWall ?
                                 combinedDist + aboveWallDistanceOffset :
                                 distance + distanceOffset);
@@ -437,7 +441,9 @@ namespace SuperUltraFishing
 
                             AreaArray[xoffset, yoffset, zoffset] = new BasicTile()
                             {
-                                Active = (belowWaterHeight && (!validValue || distance == 0)) || //invalid tiles, or valid ones that are part of ground (originally was just 'belowWaterHeight && !validValue' but this caused some issues withit being wider than the center array
+                                Active = 
+                                ((belowWaterHeight || (aboveWaterLeftDist > 0 && aboveWaterRightDist > 0)) && zoffset == (AreaSizeZ - 1)) ||
+                                (belowWaterHeight && ((!validValue || distance == 0))) || //invalid tiles, or valid ones that are part of ground (originally was just 'belowWaterHeight && !validValue' but this caused some issues withit being wider than the center array
                                 inDistance || 
                                 (!belowWaterHeight && !WaterPassThough(vanillaTile) && vanillaTile.HasTile && aboveWaterWall),
                                 TileType = lastTileType,
@@ -452,7 +458,7 @@ namespace SuperUltraFishing
                             int zoffset = (int)worldAreaCorner.Z - k;
                             float noiseVal = Math.Abs(noise.GetCubicFractal(xoffset * featureScale, yoffset * (featureScale * (!belowWaterHeight ? 0.5f : 2)), zoffset * (featureScale * 2)) * 20);
 
-                            bool inDistance = zoffset == 0 || 
+                            bool inDistance = 
                                 ((float)(k * widthMultiplier) - noiseVal) > (aboveWaterWall ? 
                                 combinedDist + aboveWallDistanceOffset : 
                                 distance + distanceOffset);
@@ -462,7 +468,9 @@ namespace SuperUltraFishing
 
                             AreaArray[xoffset, yoffset, zoffset] = new BasicTile()
                             {
-                                Active = (belowWaterHeight && (!validValue || distance == 0)) || //invalid tiles, or valid ones that are part of ground (originally was just 'belowWaterHeight && !validValue' but this caused some issues withit being wider than the center array
+                                Active = 
+                                ((belowWaterHeight || (aboveWaterLeftDist > 0 && aboveWaterRightDist > 0)) && (zoffset == 0)) ||
+                                (belowWaterHeight && (!validValue || distance == 0)) || //invalid tiles, or valid ones that are part of ground (originally was just 'belowWaterHeight && !validValue' but this caused some issues withit being wider than the center array
                                 inDistance || 
                                 (!belowWaterHeight && !WaterPassThough(vanillaTile) && vanillaTile.HasTile && aboveWaterWall), 
                                 TileType = lastTileType,

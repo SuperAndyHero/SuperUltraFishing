@@ -23,14 +23,19 @@ namespace SuperUltraFishing
     internal class Rendering : ModSystem
     {
         public RenderTarget2D WindowTarget;
-        public BasicEffect basicEffect;
+        public BasicEffect BasicEffect;
+        public Effect FlatColorEffect;
 
         //public List<VertexPositionColorTexture> TileMeshVertices = new();
         //public VertexBuffer VertBuffer;
 
         public Dictionary<Texture2D, List<VertexPositionColorTexture>> TextureVertices = new Dictionary<Texture2D, List<VertexPositionColorTexture>>();
         public Dictionary<Texture2D, VertexBuffer> TextureBuffers = new Dictionary<Texture2D, VertexBuffer>();
-        //public Dictionary<Texture2D, Color> TextureColor = new Dictionary<Texture2D, Color>();
+        public Dictionary<Texture2D, Color> TextureColor = new Dictionary<Texture2D, Color>();
+        //this could use a 1x1 texture instead, which would reduce the amount of SetVertexBuffer, and needing to change the rasterizer state
+
+        public RasterizerState FlatColorRasterizer = new RasterizerState() { };
+        public RasterizerState TexturedRasterizer = new RasterizerState() { DepthBias = -0.0001f };
 
         public Vector3 CameraPosition = Vector3.Zero;
         public float CameraYaw = 0;
@@ -58,14 +63,20 @@ namespace SuperUltraFishing
                 if (!Main.dedServ)
                 {
                     WindowTarget = new RenderTarget2D(Main.graphics.GraphicsDevice, Main.screenWidth, Main.screenHeight, false, default, DepthFormat.Depth24Stencil8);
-                    basicEffect = new BasicEffect(Main.graphics.GraphicsDevice)
+                    
+                    BasicEffect = new BasicEffect(Main.graphics.GraphicsDevice)
                     {
                         VertexColorEnabled = true,
                         TextureEnabled = true,
-                        Texture = Terraria.GameContent.TextureAssets.BlackTile.Value,    
+                        Texture = Terraria.GameContent.TextureAssets.BlackTile.Value
                     };
-                    basicEffect.Projection = Matrix.CreatePerspectiveFieldOfView((float)Math.PI / 2f, (float)Main.screenWidth / (float)Main.screenHeight, 1, 2000);
-                    basicEffect.World = Matrix.CreateWorld(Vector3.Zero, Vector3.Forward, Vector3.Up) * Matrix.CreateScale(10);
+                    BasicEffect.Projection = Matrix.CreatePerspectiveFieldOfView((float)Math.PI / 2f, (float)Main.screenWidth / (float)Main.screenHeight, 1, 2000);
+                    BasicEffect.World = Matrix.CreateWorld(Vector3.Zero, Vector3.Forward, Vector3.Up) * Matrix.CreateScale(10);
+
+                    FlatColorEffect = Mod.Assets.Request<Effect>("Effects/FlatColor", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value;
+                    FlatColorEffect.Parameters["World"].SetValue(BasicEffect.World);
+                    FlatColorEffect.Parameters["Projection"].SetValue(BasicEffect.Projection);
+                    FlatColorEffect.Parameters["Color"].SetValue(Color.Green.ToVector4());
                 }
             });
         }
@@ -94,31 +105,41 @@ namespace SuperUltraFishing
                 Main.graphics.GraphicsDevice.BlendState = BlendState.AlphaBlend;
                 Main.graphics.GraphicsDevice.SamplerStates[0] = SamplerState.PointClamp;
 
+                //these can be used to flat color tiles if fog end is close
+                //BasicEffect.FogEnabled = true;
+                //BasicEffect.FogColor = Color.Blue.ToVector3();
+
+
                 //Terraria.GameContent.TextureAssets.Ninja.Value;
 
-                if (VertexBufferBuilt)
-                {
-                    basicEffect.View = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
-                    basicEffect.VertexColorEnabled = true;
-                    basicEffect.TextureEnabled = false;
-                    foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
-                    {
-                        basicEffect.Texture = pair.Key;
-                        basicEffect.CurrentTechnique.Passes[0].Apply();
-                        Main.graphics.GraphicsDevice.SetVertexBuffer(pair.Value);
-                        Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
-                    }
+                BasicEffect.View = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
+                FlatColorEffect.Parameters["View"].SetValue(BasicEffect.View);
 
-                    basicEffect.VertexColorEnabled = false;
-                    basicEffect.TextureEnabled = true;
-                    foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
-                    {
-                        basicEffect.Texture = pair.Key;
-                        basicEffect.CurrentTechnique.Passes[0].Apply();
-                        Main.graphics.GraphicsDevice.SetVertexBuffer(pair.Value);
-                        Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
-                    }
+                BasicEffect.FogEnabled = true;
+                BasicEffect.FogColor = Color.DarkBlue.ToVector3();
+                BasicEffect.FogStart = 100;
+                BasicEffect.FogEnd = 1000;
+
+                Main.graphics.GraphicsDevice.RasterizerState = FlatColorRasterizer;
+
+                foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
+                {
+                    FlatColorEffect.Parameters["Color"].SetValue(TextureColor[pair.Key].ToVector4());
+                    FlatColorEffect.CurrentTechnique.Passes[0].Apply();
+                    Main.graphics.GraphicsDevice.SetVertexBuffer(pair.Value);
+                    Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
                 }
+
+                Main.graphics.GraphicsDevice.RasterizerState = TexturedRasterizer;
+
+                foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
+                {
+                    BasicEffect.Texture = pair.Key;
+                    BasicEffect.CurrentTechnique.Passes[0].Apply();
+                    Main.graphics.GraphicsDevice.SetVertexBuffer(pair.Value);
+                    Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
+                }
+
                 Main.graphics.GraphicsDevice.SetRenderTarget(null);
             }
         }
@@ -126,14 +147,15 @@ namespace SuperUltraFishing
         public void BuildVertexBuffer()
         {
             TextureVertices.Clear();
+            TextureBuffers.Clear();
+            TextureColor.Clear();
+
 
             AddFloorPlane(Terraria.GameContent.TextureAssets.Ninja.Value);
 
             BuildTileMesh();
              
 
-            
-            TextureBuffers.Clear();
             foreach(KeyValuePair<Texture2D, List<VertexPositionColorTexture>> pair in TextureVertices)
             {
                 TextureBuffers.Add(pair.Key, new VertexBuffer(Main.graphics.GraphicsDevice, typeof(VertexPositionColorTexture), pair.Value.Count, BufferUsage.WriteOnly));
@@ -164,90 +186,50 @@ namespace SuperUltraFishing
                         BasicTile tile = world.AreaArray[x, y, z];
                         if (!tile.Active)
                             continue;
+
                         Main.instance.LoadTiles(tile.TileType);//ensures the tile is loaded, likely not needed in normal gameplay
                         Texture2D tileTexture = Terraria.GameContent.TextureAssets.Tile[tile.TileType].Value;
 
+
                         float colorMult = 1f;// new Vector3(x, y, z).Length() / new Vector3(sizeX, sizeY, sizeZ).Length();
-                        Color color;//Color.White * colorMult
+                        Color brightnessColor = Color.White * colorMult;
 
-                        ushort ltile = Terraria.Map.MapHelper.tileLookup[tile.TileType];
+                        if (!TextureColor.ContainsKey(tileTexture))
+                        {
+                            int ltile = Terraria.Map.MapHelper.tileLookup[tile.TileType];
+                            if (ltile >= colorLookup.Length)
+                                ltile = tile.TileType;
 
-                        if(ltile >= colorLookup.Length)
-                            color = colorLookup[tile.TileType] * colorMult;
-                        else
-                            color = colorLookup[ltile] * colorMult;
+                            TextureColor[tileTexture] = colorLookup[ltile] * colorMult;
+                        }
+
 
                         //right
                         if (!(x + 1 < sizeX) || !world.AreaArray[x + 1, y, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, -(float)Math.PI / 2), color, tileTexture, tile.TileFrame);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, -(float)Math.PI / 2), brightnessColor, tileTexture, tile.TileFrame);
 
                         //left
                         if (!(x - 1 >= 0) || !world.AreaArray[x - 1, y, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, (float)Math.PI / 2), color, tileTexture, tile.TileFrame);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, (float)Math.PI / 2), brightnessColor, tileTexture, tile.TileFrame);
 
                         //top
                         if (!(y + 1 < sizeY) || !world.AreaArray[x, y + 1, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), color, tileTexture, tile.TileFrame);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), brightnessColor, tileTexture, tile.TileFrame);
 
                         //bottom
                         if (!(y - 1 >= 0) || !world.AreaArray[x, y - 1, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), color, tileTexture, tile.TileFrame);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), brightnessColor, tileTexture, tile.TileFrame);
 
                         //front (correct)
                         if (!(z + 1 < sizeZ) || !world.AreaArray[x, y, z + 1].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), color, tileTexture, tile.TileFrame);
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), brightnessColor, tileTexture, tile.TileFrame);
 
                         //back (correct)
                         if (!(z - 1 >= 0) || !world.AreaArray[x, y, z - 1].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3((float)Math.PI / 2, (float)Math.PI / 2, -(float)Math.PI / 2), color, tileTexture, tile.TileFrame, SpriteEffects.FlipHorizontally);
+                            AddQuad(new Vector3(x, y, z), new Vector3((float)Math.PI / 2, (float)Math.PI / 2, -(float)Math.PI / 2), brightnessColor, tileTexture, tile.TileFrame, SpriteEffects.FlipHorizontally);
                     }
                 }
             }
-        }
-
-        private void AddFloorPlane(Texture2D texture)
-        {
-            if (!TextureVertices.ContainsKey(texture))
-                TextureVertices[texture] = new List<VertexPositionColorTexture>();
-
-            float scale = 100;
-            float drop = 32;
-            VertexPositionColorTexture vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(-scale, -drop, -scale);
-            vertex.Color = Color.BlanchedAlmond;
-            vertex.TextureCoordinate = new Vector2(0, 0);
-            TextureVertices[texture].Add(vertex);
-
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(scale, -drop, -scale);
-            vertex.Color = Color.Cornsilk;
-            vertex.TextureCoordinate = new Vector2(1, 0);
-            TextureVertices[texture].Add(vertex);
-
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(-scale, -drop, scale);
-            vertex.Color = Color.Cornsilk;
-            vertex.TextureCoordinate = new Vector2(0, 1);
-            TextureVertices[texture].Add(vertex);
-
-
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(scale, -drop, -scale);
-            vertex.Color = Color.Cornsilk;
-            vertex.TextureCoordinate = new Vector2(1, 0);
-            TextureVertices[texture].Add(vertex);
-
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(scale, -drop, scale);
-            vertex.Color = Color.SaddleBrown;
-            vertex.TextureCoordinate = new Vector2(1, 1);
-            TextureVertices[texture].Add(vertex);
-
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(-scale, -drop, scale);
-            vertex.Color = Color.Cornsilk;
-            vertex.TextureCoordinate = new Vector2(0, 1);
-            TextureVertices[texture].Add(vertex);
         }
 
         private void AddQuad(Vector3 position, Vector3 ypr, Color color, Texture2D texture, Vector2 frame = default, SpriteEffects effects = SpriteEffects.None)
@@ -306,6 +288,54 @@ namespace SuperUltraFishing
             vertex.Color = color;
             vertex.TextureCoordinate = new Vector2(xMin, yMax);
 
+            TextureVertices[texture].Add(vertex);
+        }
+
+        private void AddFloorPlane(Texture2D texture)
+        {
+            if (!TextureVertices.ContainsKey(texture))
+                TextureVertices[texture] = new List<VertexPositionColorTexture>();
+
+            if (!TextureColor.ContainsKey(texture))
+                TextureColor[texture] = Color.WhiteSmoke;
+
+            float scale = 100;
+            float drop = 32;
+            VertexPositionColorTexture vertex = new VertexPositionColorTexture();
+            vertex.Position = new Vector3(-scale, -drop, -scale);
+            vertex.Color = Color.BlanchedAlmond;
+            vertex.TextureCoordinate = new Vector2(0, 0);
+            TextureVertices[texture].Add(vertex);
+
+            vertex = new VertexPositionColorTexture();
+            vertex.Position = new Vector3(scale, -drop, -scale);
+            vertex.Color = Color.Cornsilk;
+            vertex.TextureCoordinate = new Vector2(1, 0);
+            TextureVertices[texture].Add(vertex);
+
+            vertex = new VertexPositionColorTexture();
+            vertex.Position = new Vector3(-scale, -drop, scale);
+            vertex.Color = Color.Cornsilk;
+            vertex.TextureCoordinate = new Vector2(0, 1);
+            TextureVertices[texture].Add(vertex);
+
+
+            vertex = new VertexPositionColorTexture();
+            vertex.Position = new Vector3(scale, -drop, -scale);
+            vertex.Color = Color.Cornsilk;
+            vertex.TextureCoordinate = new Vector2(1, 0);
+            TextureVertices[texture].Add(vertex);
+
+            vertex = new VertexPositionColorTexture();
+            vertex.Position = new Vector3(scale, -drop, scale);
+            vertex.Color = Color.SaddleBrown;
+            vertex.TextureCoordinate = new Vector2(1, 1);
+            TextureVertices[texture].Add(vertex);
+
+            vertex = new VertexPositionColorTexture();
+            vertex.Position = new Vector3(-scale, -drop, scale);
+            vertex.Color = Color.Cornsilk;
+            vertex.TextureCoordinate = new Vector2(0, 1);
             TextureVertices[texture].Add(vertex);
         }
     }
