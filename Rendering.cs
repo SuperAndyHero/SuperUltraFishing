@@ -24,12 +24,13 @@ namespace SuperUltraFishing
     {
         public RenderTarget2D WindowTarget;
         public BasicEffect BasicEffect;
-        public Effect FlatColorEffect;
+        public BasicEffect FlatColorEffect;
+        //public Effect FlatColorEffect;
 
         //public List<VertexPositionColorTexture> TileMeshVertices = new();
         //public VertexBuffer VertBuffer;
 
-        public Dictionary<Texture2D, List<VertexPositionColorTexture>> TextureVertices = new Dictionary<Texture2D, List<VertexPositionColorTexture>>();
+        public Dictionary<Texture2D, List<VertexPositionColorNormalTexture>> TextureVertices = new Dictionary<Texture2D, List<VertexPositionColorNormalTexture>>();
         public Dictionary<Texture2D, VertexBuffer> TextureBuffers = new Dictionary<Texture2D, VertexBuffer>();
         public Dictionary<Texture2D, Color> TextureColor = new Dictionary<Texture2D, Color>();
         //this could use a 1x1 texture instead, which would reduce the amount of SetVertexBuffer, and needing to change the rasterizer state
@@ -63,20 +64,33 @@ namespace SuperUltraFishing
                 if (!Main.dedServ)
                 {
                     WindowTarget = new RenderTarget2D(Main.graphics.GraphicsDevice, Main.screenWidth, Main.screenHeight, false, default, DepthFormat.Depth24Stencil8);
-                    
+
                     BasicEffect = new BasicEffect(Main.graphics.GraphicsDevice)
                     {
                         VertexColorEnabled = true,
                         TextureEnabled = true,
-                        Texture = Terraria.GameContent.TextureAssets.BlackTile.Value
+                        Texture = Terraria.GameContent.TextureAssets.BlackTile.Value,
+                        LightingEnabled = true
                     };
                     BasicEffect.Projection = Matrix.CreatePerspectiveFieldOfView((float)Math.PI / 2f, (float)Main.screenWidth / (float)Main.screenHeight, 1, 2000);
                     BasicEffect.World = Matrix.CreateWorld(Vector3.Zero, Vector3.Forward, Vector3.Up) * Matrix.CreateScale(10);
 
-                    FlatColorEffect = Mod.Assets.Request<Effect>("Effects/FlatColor", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value;
-                    FlatColorEffect.Parameters["World"].SetValue(BasicEffect.World);
-                    FlatColorEffect.Parameters["Projection"].SetValue(BasicEffect.Projection);
-                    FlatColorEffect.Parameters["Color"].SetValue(Color.Green.ToVector4());
+
+                    FlatColorEffect = new BasicEffect(Main.graphics.GraphicsDevice)
+                    {
+                        VertexColorEnabled = true,
+                        LightingEnabled = true
+                        //TextureEnabled = true,
+                        //Texture = Terraria.GameContent.TextureAssets.BlackTile.Value
+                    };
+                    FlatColorEffect.Projection = BasicEffect.Projection;
+                    FlatColorEffect.World = BasicEffect.World;
+
+
+                    //FlatColorEffect = Mod.Assets.Request<Effect>("Effects/FlatColor", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value;
+                    //FlatColorEffect.Parameters["World"].SetValue(BasicEffect.World);
+                    //FlatColorEffect.Parameters["Projection"].SetValue(BasicEffect.Projection);
+                    //FlatColorEffect.Parameters["Color"].SetValue(Color.Green.ToVector4());
                 }
             });
         }
@@ -101,43 +115,41 @@ namespace SuperUltraFishing
 
                 Main.graphics.GraphicsDevice.SetRenderTarget(WindowTarget);
                 Main.graphics.GraphicsDevice.Clear(Color.Gray);
-                Main.graphics.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-                Main.graphics.GraphicsDevice.BlendState = BlendState.AlphaBlend;
-                Main.graphics.GraphicsDevice.SamplerStates[0] = SamplerState.PointClamp;
+                Main.graphics.GraphicsDevice.DepthStencilState = DepthStencilState.Default;//needed or earlier drawn tiles appear in front
+                Main.graphics.GraphicsDevice.BlendState = BlendState.AlphaBlend;//needed or a similar issue as above happens
+                Main.graphics.GraphicsDevice.SamplerStates[0] = SamplerState.PointClamp;//keeps the quads pixel perfect
 
-                //these can be used to flat color tiles if fog end is close
-                //BasicEffect.FogEnabled = true;
-                //BasicEffect.FogColor = Color.Blue.ToVector3();
+                BasicEffect.View = FlatColorEffect.View = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
 
+                //todo: http://www.catalinzima.com/xna/tutorials/deferred-rendering-in-xna/point-lights/
 
-                //Terraria.GameContent.TextureAssets.Ninja.Value;
+                BasicEffect.FogEnabled = FlatColorEffect.FogEnabled = false;
+                //BasicEffect.FogEnabled = FlatColorEffect.FogEnabled = true;
+                BasicEffect.FogColor = FlatColorEffect.FogColor = new Vector3(0.12f, 0.12f, 0.35f);
+                BasicEffect.FogStart = FlatColorEffect.FogStart = 0;
+                BasicEffect.FogEnd = FlatColorEffect.FogEnd = 200;
 
-                BasicEffect.View = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
-                FlatColorEffect.Parameters["View"].SetValue(BasicEffect.View);
+                BasicEffect.AmbientLightColor = new Vector3(0.3f, 0.3f, 0.3f);
 
-                BasicEffect.FogEnabled = true;
-                BasicEffect.FogColor = Color.DarkBlue.ToVector3();
-                BasicEffect.FogStart = 100;
-                BasicEffect.FogEnd = 1000;
-
-                Main.graphics.GraphicsDevice.RasterizerState = FlatColorRasterizer;
+                BasicEffect.DirectionalLight0.Enabled = FlatColorEffect.DirectionalLight0.Enabled = true;
+                BasicEffect.DirectionalLight0.SpecularColor = FlatColorEffect.DirectionalLight0.SpecularColor = Color.Gray.ToVector3();
+                BasicEffect.DirectionalLight0.DiffuseColor = FlatColorEffect.DirectionalLight0.DiffuseColor = Color.Gray.ToVector3();
+                BasicEffect.DirectionalLight0.Direction = FlatColorEffect.DirectionalLight0.Direction = Vector3.Normalize(Vector3.Down + Vector3.Left);
 
                 foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
                 {
-                    FlatColorEffect.Parameters["Color"].SetValue(TextureColor[pair.Key].ToVector4());
-                    FlatColorEffect.CurrentTechnique.Passes[0].Apply();
                     Main.graphics.GraphicsDevice.SetVertexBuffer(pair.Value);
+
+                    FlatColorEffect.AmbientLightColor = TextureColor[pair.Key].ToVector3() * BasicEffect.AmbientLightColor;
+                    FlatColorEffect.CurrentTechnique.Passes[0].Apply();
                     Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
-                }
+                    //var verArray = TextureVertices[pair.Key].ToArray();
+                    //Main.graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColorTexture>(PrimitiveType.TriangleList, verArray, 0, pair.Value.VertexCount / 3);
 
-                Main.graphics.GraphicsDevice.RasterizerState = TexturedRasterizer;
-
-                foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
-                {
                     BasicEffect.Texture = pair.Key;
                     BasicEffect.CurrentTechnique.Passes[0].Apply();
-                    Main.graphics.GraphicsDevice.SetVertexBuffer(pair.Value);
                     Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
+                    //Main.graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColorTexture>(PrimitiveType.TriangleList, verArray, 0, pair.Value.VertexCount / 3);
                 }
 
                 Main.graphics.GraphicsDevice.SetRenderTarget(null);
@@ -156,13 +168,32 @@ namespace SuperUltraFishing
             BuildTileMesh();
              
 
-            foreach(KeyValuePair<Texture2D, List<VertexPositionColorTexture>> pair in TextureVertices)
+            foreach(KeyValuePair<Texture2D, List<VertexPositionColorNormalTexture>> pair in TextureVertices)
             {
-                TextureBuffers.Add(pair.Key, new VertexBuffer(Main.graphics.GraphicsDevice, typeof(VertexPositionColorTexture), pair.Value.Count, BufferUsage.WriteOnly));
-                TextureBuffers[pair.Key].SetData(pair.Value.ToArray());
+                TextureBuffers.Add(pair.Key, new VertexBuffer(Main.graphics.GraphicsDevice, typeof(VertexPositionColorNormalTexture), pair.Value.Count, BufferUsage.None));
+                var vertArray = pair.Value.ToArray();
+                CalculateArrayNormals(vertArray);
+                TextureBuffers[pair.Key].SetData(vertArray);
             }
 
             VertexBufferBuilt = true;
+        }
+
+        public static void CalculateArrayNormals(VertexPositionColorNormalTexture[] list)
+        {
+            for (int i = 0; i < list.Length; i += 3)
+            {
+                Vector3 normal = CalculateNormal(list[i].Position, list[i + 1].Position, list[i + 2].Position);
+                list[i].Normal = normal;
+                list[i + 1].Normal = normal;
+                list[i + 2].Normal = normal;
+            }
+        }
+        public static Vector3 CalculateNormal(Vector3 pos1, Vector3 pos2, Vector3 pos3)
+        {
+            Vector3 side1 = pos1 - pos3;
+            Vector3 side2 = pos1 - pos2;
+            return Vector3.Normalize(Vector3.Cross(side1, side2));
         }
 
         private void BuildTileMesh()//todo: maybe bake the lighting in?
@@ -238,7 +269,7 @@ namespace SuperUltraFishing
             float ySize = 1f / texture.Height;
 
             if (!TextureVertices.ContainsKey(texture))
-                TextureVertices[texture] = new List<VertexPositionColorTexture>();
+                TextureVertices[texture] = new List<VertexPositionColorNormalTexture>();
 
             float xMin = frame.X * xSize;
             float xMax = xMin + (16 * xSize);
@@ -252,90 +283,92 @@ namespace SuperUltraFishing
             if (effects.HasFlag(SpriteEffects.FlipVertically))
                 (yMin, yMax) = (yMax, yMin);
 
-            VertexPositionColorTexture vertex = new VertexPositionColorTexture();
-            vertex.Position = position + Vector3.Transform(new Vector3(-0.5f, 0.5f, -0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
-            vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(xMin, yMin);
+            VertexPositionColorNormalTexture vertex = new VertexPositionColorNormalTexture(
+                position + Vector3.Transform(new Vector3(-0.5f, 0.5f, -0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                color,
+                new Vector2(xMin, yMin));
             TextureVertices[texture].Add(vertex);
 
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = position + Vector3.Transform(new Vector3(0.5f, 0.5f, -0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
-            vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(xMax, yMin);
+            vertex = new VertexPositionColorNormalTexture(
+                position + Vector3.Transform(new Vector3(0.5f, 0.5f, -0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                color,
+                new Vector2(xMax, yMin));
             TextureVertices[texture].Add(vertex);
 
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = position + Vector3.Transform(new Vector3(-0.5f, 0.5f, 0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
-            vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(xMin, yMax);
+            vertex = new VertexPositionColorNormalTexture(
+                position + Vector3.Transform(new Vector3(-0.5f, 0.5f, 0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                color,
+                new Vector2(xMin, yMax));
             TextureVertices[texture].Add(vertex);
 
 
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = position + Vector3.Transform(new Vector3(0.5f, 0.5f, -0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
-            vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(xMax, yMin);
+            vertex = new VertexPositionColorNormalTexture(
+                position + Vector3.Transform(new Vector3(0.5f, 0.5f, -0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                color,
+                new Vector2(xMax, yMin));
             TextureVertices[texture].Add(vertex);
 
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = position + Vector3.Transform(new Vector3(0.5f, 0.5f, 0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
-            vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(xMax, yMax);
+            vertex = new VertexPositionColorNormalTexture(
+                position + Vector3.Transform(new Vector3(0.5f, 0.5f, 0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                color,
+                new Vector2(xMax, yMax));
             TextureVertices[texture].Add(vertex);
 
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = position + Vector3.Transform(new Vector3(-0.5f, 0.5f, 0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z));
-            vertex.Color = color;
-            vertex.TextureCoordinate = new Vector2(xMin, yMax);
-
+            vertex = new VertexPositionColorNormalTexture(
+                position + Vector3.Transform(new Vector3(-0.5f, 0.5f, 0.5f), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                color,
+                new Vector2(xMin, yMax));
             TextureVertices[texture].Add(vertex);
         }
 
         private void AddFloorPlane(Texture2D texture)
         {
             if (!TextureVertices.ContainsKey(texture))
-                TextureVertices[texture] = new List<VertexPositionColorTexture>();
+                TextureVertices[texture] = new List<VertexPositionColorNormalTexture>();
 
             if (!TextureColor.ContainsKey(texture))
                 TextureColor[texture] = Color.WhiteSmoke;
 
             float scale = 100;
             float drop = 32;
-            VertexPositionColorTexture vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(-scale, -drop, -scale);
-            vertex.Color = Color.BlanchedAlmond;
-            vertex.TextureCoordinate = new Vector2(0, 0);
+
+            VertexPositionColorNormalTexture vertex = new VertexPositionColorNormalTexture(
+                new Vector3(-scale, -drop, -scale),
+                Color.BlanchedAlmond,
+                new Vector2(0, 0));
             TextureVertices[texture].Add(vertex);
 
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(scale, -drop, -scale);
-            vertex.Color = Color.Cornsilk;
-            vertex.TextureCoordinate = new Vector2(1, 0);
+            vertex = new VertexPositionColorNormalTexture(
+                new Vector3(scale, -drop, -scale),
+                Color.Cornsilk,
+                new Vector2(1, 0));
             TextureVertices[texture].Add(vertex);
 
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(-scale, -drop, scale);
-            vertex.Color = Color.Cornsilk;
-            vertex.TextureCoordinate = new Vector2(0, 1);
+            vertex = new VertexPositionColorNormalTexture(
+                new Vector3(-scale, -drop, scale),
+                Color.Cornsilk,
+                new Vector2(0, 1));
             TextureVertices[texture].Add(vertex);
 
 
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(scale, -drop, -scale);
-            vertex.Color = Color.Cornsilk;
-            vertex.TextureCoordinate = new Vector2(1, 0);
+
+
+            vertex = new VertexPositionColorNormalTexture(
+                new Vector3(scale, -drop, -scale),
+                Color.Cornsilk,
+                new Vector2(1, 0));
             TextureVertices[texture].Add(vertex);
 
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(scale, -drop, scale);
-            vertex.Color = Color.SaddleBrown;
-            vertex.TextureCoordinate = new Vector2(1, 1);
+            vertex = new VertexPositionColorNormalTexture(
+                new Vector3(scale, -drop, scale),
+                Color.SaddleBrown,
+                 new Vector2(1, 1));
             TextureVertices[texture].Add(vertex);
 
-            vertex = new VertexPositionColorTexture();
-            vertex.Position = new Vector3(-scale, -drop, scale);
-            vertex.Color = Color.Cornsilk;
-            vertex.TextureCoordinate = new Vector2(0, 1);
+            vertex = new VertexPositionColorNormalTexture(
+                new Vector3(-scale, -drop, scale),
+                Color.Cornsilk,
+                new Vector2(0, 1));
             TextureVertices[texture].Add(vertex);
         }
     }
