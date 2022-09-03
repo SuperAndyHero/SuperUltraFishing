@@ -17,10 +17,10 @@ namespace SuperUltraFishing
             ContentHandler.Load();
             //Model model = ContentHandler.GetModel("SuperUltraFishing/Models/20Dice");
 
-            string name = "FlatColor";
-            var screenRef = new Ref<Effect>(Assets.Request<Effect>("Effects/FlatColor", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value);
-            Filters.Scene[name] = new Filter(new ScreenShaderData(screenRef, name + "Pass"), EffectPriority.High);
-            Filters.Scene[name].Load();
+            //string name = "FlatColor";
+            //var screenRef = new Ref<Effect>(Assets.Request<Effect>("Effects/FlatColor", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value);
+            //Filters.Scene[name] = new Filter(new ScreenShaderData(screenRef, name + "Pass"), EffectPriority.High);
+            //Filters.Scene[name].Load();
         }
 
         public override void Unload()

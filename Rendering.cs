@@ -166,9 +166,9 @@ namespace SuperUltraFishing
             AddFloorPlane(Terraria.GameContent.TextureAssets.Ninja.Value);
 
             BuildTileMesh();
-             
 
-            foreach(KeyValuePair<Texture2D, List<VertexPositionColorNormalTexture>> pair in TextureVertices)
+
+            foreach (KeyValuePair<Texture2D, List<VertexPositionColorNormalTexture>> pair in TextureVertices)
             {
                 TextureBuffers.Add(pair.Key, new VertexBuffer(Main.graphics.GraphicsDevice, typeof(VertexPositionColorNormalTexture), pair.Value.Count, BufferUsage.None));
                 var vertArray = pair.Value.ToArray();
@@ -194,6 +194,43 @@ namespace SuperUltraFishing
             Vector3 side1 = pos1 - pos3;
             Vector3 side2 = pos1 - pos2;
             return Vector3.Normalize(Vector3.Cross(side1, side2));
+        }
+
+        public class TileState
+        {
+            public (bool active, Vector2 Frame) TopFace;
+            public (bool active, Vector2 Frame) BottomFace;
+            public (bool active, Vector2 Frame) FrontFace;
+            public (bool active, Vector2 Frame) BackFace;
+            public (bool active, Vector2 Frame) RightFace;
+            public (bool active, Vector2 Frame) LeftFace;
+            public TileState(Vector2 BaseFrame)
+            {
+                TopFace = BottomFace = FrontFace = BackFace = RightFace = LeftFace = (true, BaseFrame);
+            }
+        }
+        //todo: try and make a framing method that dynamically changes the axis it checks in
+
+        private TileState FrameTile(BasicTile tile, int x, int y, int z)
+        {
+            TileState tileState = new TileState(tile.TileFrame);
+
+            int sizeX = world.AreaArray.GetLength(0);
+            int sizeY = world.AreaArray.GetLength(1);
+            int sizeZ = world.AreaArray.GetLength(2);
+
+            tileState.RightFace.active = !(x + 1 < sizeX) || !world.AreaArray[x + 1, y, z].Active;
+            tileState.LeftFace.active = !(x - 1 >= 0) || !world.AreaArray[x - 1, y, z].Active;
+            tileState.TopFace.active = !(y + 1 < sizeY) || !world.AreaArray[x, y + 1, z].Active;
+            tileState.BottomFace.active = !(y - 1 >= 0) || !world.AreaArray[x, y - 1, z].Active;
+            tileState.FrontFace.active = !(z + 1 < sizeZ) || !world.AreaArray[x, y, z + 1].Active;
+            tileState.BackFace.active = !(z - 1 >= 0) || !world.AreaArray[x, y, z - 1].Active;
+
+            if (Main.tileFrameImportant[tile.TileType])//needs to check if a tile is 1 wide or not
+                tileState.RightFace.Frame = tileState.LeftFace.Frame = tileState.TopFace.Frame = tileState.BottomFace.Frame = new Vector2(ushort.MaxValue);
+
+
+            return tileState;
         }
 
         private void BuildTileMesh()//todo: maybe bake the lighting in?
@@ -234,30 +271,31 @@ namespace SuperUltraFishing
                             TextureColor[tileTexture] = colorLookup[ltile] * colorMult;
                         }
 
+                        TileState tileState = FrameTile(tile, x, y, z);//lighting may need to be included in this later
 
                         //right
-                        if (!(x + 1 < sizeX) || !world.AreaArray[x + 1, y, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, -(float)Math.PI / 2), brightnessColor, tileTexture, tile.TileFrame);
+                        if (tileState.RightFace.active)
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, -(float)Math.PI / 2), brightnessColor, tileTexture, tileState.RightFace.Frame);
 
                         //left
-                        if (!(x - 1 >= 0) || !world.AreaArray[x - 1, y, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, (float)Math.PI / 2), brightnessColor, tileTexture, tile.TileFrame);
+                        if (tileState.LeftFace.active)
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, (float)Math.PI / 2), brightnessColor, tileTexture, tileState.LeftFace.Frame);
 
                         //top
-                        if (!(y + 1 < sizeY) || !world.AreaArray[x, y + 1, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), brightnessColor, tileTexture, tile.TileFrame);
+                        if (tileState.TopFace.active)
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), brightnessColor, tileTexture, tileState.TopFace.Frame);
 
                         //bottom
-                        if (!(y - 1 >= 0) || !world.AreaArray[x, y - 1, z].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), brightnessColor, tileTexture, tile.TileFrame);
+                        if (tileState.BottomFace.active)
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), brightnessColor, tileTexture, tileState.BottomFace.Frame);
 
-                        //front (correct)
-                        if (!(z + 1 < sizeZ) || !world.AreaArray[x, y, z + 1].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), brightnessColor, tileTexture, tile.TileFrame);
+                        //front
+                        if (tileState.FrontFace.active)
+                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), brightnessColor, tileTexture, tileState.FrontFace.Frame);
 
-                        //back (correct)
-                        if (!(z - 1 >= 0) || !world.AreaArray[x, y, z - 1].Active)
-                            AddQuad(new Vector3(x, y, z), new Vector3((float)Math.PI / 2, (float)Math.PI / 2, -(float)Math.PI / 2), brightnessColor, tileTexture, tile.TileFrame, SpriteEffects.FlipHorizontally);
+                        //back
+                        if (tileState.BackFace.active)
+                            AddQuad(new Vector3(x, y, z), new Vector3((float)Math.PI / 2, (float)Math.PI / 2, -(float)Math.PI / 2), brightnessColor, tileTexture, tileState.BackFace.Frame, SpriteEffects.FlipHorizontally);
                     }
                 }
             }
