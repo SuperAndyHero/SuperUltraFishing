@@ -49,6 +49,11 @@ namespace SuperUltraFishing
 
         public static Color[] colorLookup;
 
+        public HashSet<ushort> FourSidedTiles;
+
+        //public HashSet<ushort> FourSidedTilesBL;
+        public HashSet<ushort> CrossTile;
+
         public override void PostAddRecipes()
         {
             world = GetInstance<World>();
@@ -204,12 +209,13 @@ namespace SuperUltraFishing
             public (bool active, Vector2 Frame) BackFace;
             public (bool active, Vector2 Frame) RightFace;
             public (bool active, Vector2 Frame) LeftFace;
+            public bool CrossTile;
             public TileState(Vector2 BaseFrame)
             {
                 TopFace = BottomFace = FrontFace = BackFace = RightFace = LeftFace = (true, BaseFrame);
+                CrossTile = false;
             }
         }
-        //todo: try and make a framing method that dynamically changes the axis it checks in
 
         private TileState FrameTile(BasicTile tile, int x, int y, int z)
         {
@@ -219,15 +225,101 @@ namespace SuperUltraFishing
             int sizeY = world.AreaArray.GetLength(1);
             int sizeZ = world.AreaArray.GetLength(2);
 
-            tileState.RightFace.active = !(x + 1 < sizeX) || !world.AreaArray[x + 1, y, z].Active;
-            tileState.LeftFace.active = !(x - 1 >= 0) || !world.AreaArray[x - 1, y, z].Active;
-            tileState.TopFace.active = !(y + 1 < sizeY) || !world.AreaArray[x, y + 1, z].Active;
-            tileState.BottomFace.active = !(y - 1 >= 0) || !world.AreaArray[x, y - 1, z].Active;
-            tileState.FrontFace.active = !(z + 1 < sizeZ) || !world.AreaArray[x, y, z + 1].Active;
-            tileState.BackFace.active = !(z - 1 >= 0) || !world.AreaArray[x, y, z - 1].Active;
+            tileState.RightFace.active = !(x + 1 < sizeX) || !world.AreaArray[x + 1, y, z].Active || !world.AreaArray[x + 1, y, z].Collide;
+            tileState.LeftFace.active = !(x - 1 >= 0) || !world.AreaArray[x - 1, y, z].Active || !world.AreaArray[x - 1, y, z].Collide;
+            tileState.TopFace.active = !(y + 1 < sizeY) || !world.AreaArray[x, y + 1, z].Active || !world.AreaArray[x, y + 1, z].Collide;
+            tileState.BottomFace.active = !(y - 1 >= 0) || !world.AreaArray[x, y - 1, z].Active || !world.AreaArray[x, y - 1, z].Collide;
+            tileState.FrontFace.active = !(z + 1 < sizeZ) || !world.AreaArray[x, y, z + 1].Active || !world.AreaArray[x, y, z + 1].Collide;
+            tileState.BackFace.active = !(z - 1 >= 0) || !world.AreaArray[x, y, z - 1].Active || !world.AreaArray[x, y, z - 1].Collide;
 
-            if (Main.tileFrameImportant[tile.TileType])//needs to check if a tile is 1 wide or not
-                tileState.RightFace.Frame = tileState.LeftFace.Frame = tileState.TopFace.Frame = tileState.BottomFace.Frame = new Vector2(ushort.MaxValue);
+            tileState.CrossTile = world.CrossTile.Contains(tile.TileType);
+
+            //sand is broken due to it falling
+            if (!(Main.tileFrameImportant[tile.TileType] || tileState.CrossTile))//does not touch frame important tiles since they already have their frame and this would break them
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        int offX = x + (i - 1);   
+                        int offY = y + ((-j + 2) - 1);
+                        int worldx = i + 5;
+                        int worldy = j + 5;
+                        if (!(offX < 0 || offX >= sizeX || offY < 0 || offY >= sizeY))
+                        {
+                            //WorldGen.PlaceTile(worldx, worldy, world.AreaArray[offX, offY, z].TileType, true, true);//much slower
+                            Main.tile[worldx, worldy].Get<TileWallWireStateData>().HasTile = world.AreaArray[offX, offY, z].Active;
+                            Main.tile[worldx, worldy].Get<TileTypeData>().Type = world.AreaArray[offX, offY, z].TileType;
+                            //Main.tile[worldx, worldy].Get<TileWallWireStateData>().TileFrameX = (short)world.AreaArray[offX, offY, z].TileFrame.X;
+                            //Main.tile[worldx, worldy].Get<TileWallWireStateData>().TileFrameY = (short)world.AreaArray[offX, offY, z].TileFrame.Y;
+                        }
+                        else
+                            Main.tile[worldx, worldy].Get<TileWallWireStateData>().HasTile = false;
+                    }
+                }
+                WorldGen.TileFrame(6, 6, true);
+                tileState.FrontFace.Frame = tileState.BackFace.Frame = new Vector2(Main.tile[6, 6].TileFrameX, Main.tile[6, 6].TileFrameY);
+
+
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        int offZ = z + (i - 1);
+                        int offY = y + ((-j + 2) - 1);
+                        int worldx = i + 5;
+                        int worldy = j + 5;
+                        if (!(offY < 0 || offY >= sizeY || offZ < 0 || offZ >= sizeZ))
+                        {
+                            //WorldGen.PlaceTile(worldx, worldy, world.AreaArray[x, offY, offZ].TileType, true, true);
+                            Main.tile[worldx, worldy].Get<TileWallWireStateData>().HasTile = world.AreaArray[x, offY, offZ].Active;
+                            Main.tile[worldx, worldy].Get<TileTypeData>().Type = world.AreaArray[x, offY, offZ].TileType;
+                            //Main.tile[worldx, worldy].Get<TileWallWireStateData>().TileFrameX = (short)world.AreaArray[x, offY, offZ].TileFrame.X;
+                            //Main.tile[worldx, worldy].Get<TileWallWireStateData>().TileFrameY = (short)world.AreaArray[x, offY, offZ].TileFrame.Y;
+                        }
+                        else
+                            Main.tile[worldx, worldy].Get<TileWallWireStateData>().HasTile = false;
+                    }
+                }
+                WorldGen.TileFrame(6, 6, true);
+                tileState.RightFace.Frame = tileState.LeftFace.Frame = new Vector2(Main.tile[6, 6].TileFrameX, Main.tile[6, 6].TileFrameY);
+
+
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        int offX = x + (i - 1);
+                        int offZ = z + (j - 1);
+                        int worldx = i + 5;
+                        int worldy = j + 5;
+                        if (!(offX < 0 || offX >= sizeX || offZ < 0 || offZ >= sizeZ))
+                        {
+                            //WorldGen.PlaceTile(worldx, worldy, world.AreaArray[offX, y, offZ].TileType, true, true);
+                            Main.tile[worldx, worldy].Get<TileWallWireStateData>().HasTile = world.AreaArray[offX, y, offZ].Active;
+                            Main.tile[worldx, worldy].Get<TileTypeData>().Type = world.AreaArray[offX, y, offZ].TileType;
+                            //Main.tile[worldx, worldy].Get<TileWallWireStateData>().TileFrameX = (short)world.AreaArray[offX, y, offZ].TileFrame.X;
+                            //Main.tile[worldx, worldy].Get<TileWallWireStateData>().TileFrameY = (short)world.AreaArray[offX, y, offZ].TileFrame.Y;
+                        }
+                        else
+                            Main.tile[worldx, worldy].Get<TileWallWireStateData>().HasTile = false;
+
+                        Terraria.ObjectData.TileObjectData.newTile.CopyFrom(Terraria.ObjectData.TileObjectData.Style1xX);
+                    }
+                }
+                WorldGen.TileFrame(6, 6, true);
+                tileState.TopFace.Frame = tileState.BottomFace.Frame = new Vector2(Main.tile[6, 6].TileFrameX, Main.tile[6, 6].TileFrameY);
+            }
+            else
+            {
+                tileState.TopFace.Frame = tileState.BottomFace.Frame = new Vector2(ushort.MaxValue);
+
+                //is not a quad tile blank out 2 sides of the tile
+                if (!world.FourSidedTiles.Contains(tile.TileType))
+                {
+                    tileState.RightFace.Frame = tileState.LeftFace.Frame = new Vector2(ushort.MaxValue);
+                }
+            }
 
 
             return tileState;
@@ -262,40 +354,44 @@ namespace SuperUltraFishing
                         float colorMult = 1f;// new Vector3(x, y, z).Length() / new Vector3(sizeX, sizeY, sizeZ).Length();
                         Color brightnessColor = Color.White * colorMult;
 
+                        //if this texture does not exist in the dictionary add a new entry
                         if (!TextureColor.ContainsKey(tileTexture))
                         {
                             int ltile = Terraria.Map.MapHelper.tileLookup[tile.TileType];
                             if (ltile >= colorLookup.Length)
                                 ltile = tile.TileType;
 
-                            TextureColor[tileTexture] = colorLookup[ltile] * colorMult;
+                            TextureColor[tileTexture] = colorLookup[ltile];
                         }
 
                         TileState tileState = FrameTile(tile, x, y, z);//lighting may need to be included in this later
 
-                        //right
-                        if (tileState.RightFace.active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, -(float)Math.PI / 2), brightnessColor, tileTexture, tileState.RightFace.Frame);
+                        if (!tileState.CrossTile)
+                        {
+                            //right
+                            if (tileState.RightFace.active)
+                                AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, -(float)Math.PI / 2), brightnessColor, tileTexture, tileState.RightFace.Frame, SpriteEffects.FlipHorizontally);
 
-                        //left
-                        if (tileState.LeftFace.active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, (float)Math.PI / 2), brightnessColor, tileTexture, tileState.LeftFace.Frame);
+                            //left
+                            if (tileState.LeftFace.active)
+                                AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, (float)Math.PI / 2), brightnessColor, tileTexture, tileState.LeftFace.Frame);
 
-                        //top
-                        if (tileState.TopFace.active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), brightnessColor, tileTexture, tileState.TopFace.Frame);
+                            //top
+                            if (tileState.TopFace.active)
+                                AddQuad(new Vector3(x, y, z), new Vector3(0, 0, 0), brightnessColor, tileTexture, tileState.TopFace.Frame);
 
-                        //bottom
-                        if (tileState.BottomFace.active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), brightnessColor, tileTexture, tileState.BottomFace.Frame);
+                            //bottom
+                            if (tileState.BottomFace.active)
+                                AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), brightnessColor, tileTexture, tileState.BottomFace.Frame);
 
-                        //front
-                        if (tileState.FrontFace.active)
-                            AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), brightnessColor, tileTexture, tileState.FrontFace.Frame);
+                            //front
+                            if (tileState.FrontFace.active)
+                                AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI / 2, 0), brightnessColor, tileTexture, tileState.FrontFace.Frame);
 
-                        //back
-                        if (tileState.BackFace.active)
-                            AddQuad(new Vector3(x, y, z), new Vector3((float)Math.PI / 2, (float)Math.PI / 2, -(float)Math.PI / 2), brightnessColor, tileTexture, tileState.BackFace.Frame, SpriteEffects.FlipHorizontally);
+                            //back
+                            if (tileState.BackFace.active)
+                                AddQuad(new Vector3(x, y, z), new Vector3((float)Math.PI / 2, (float)Math.PI / 2, -(float)Math.PI / 2), brightnessColor, tileTexture, tileState.BackFace.Frame, SpriteEffects.FlipHorizontally);
+                        }
                     }
                 }
             }

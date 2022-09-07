@@ -29,6 +29,110 @@ namespace SuperUltraFishing
 
         public Point16 LastWorldLocation = Point16.Zero;
 
+
+        public HashSet<ushort> FourSidedTiles;
+
+        //public HashSet<ushort> FourSidedTilesBL;
+        public HashSet<ushort> CrossTile;
+
+        public override void Load()
+        {
+            CrossTile = new HashSet<ushort>
+            {
+                TileID.Saplings,
+                TileID.Bottles,
+                TileID.FireflyinaBottle,
+                TileID.LavaflyinaBottle,
+                TileID.LightningBuginaBottle,
+                TileID.SoulBottles,
+                TileID.Chairs,
+                TileID.Candles,
+                TileID.Presents,
+                TileID.HangingLanterns,
+                TileID.WaterCandle,
+                TileID.Books,
+                TileID.ImmatureHerbs,
+                TileID.MatureHerbs,
+                TileID.BloomingHerbs,
+                //TileID.Torches,   //sticks to walls, specal case
+                TileID.Banners,
+                TileID.Lampposts,
+                TileID.Lamps,
+                //TileID.Crystals,  //sticks to walls
+                TileID.PressurePlates,
+                TileID.WeightedPressurePlate,
+                TileID.HolidayLights,
+                TileID.Stalactite,
+                TileID.GemSaplings,
+                //TileID.ExposedGems,   //sticks to walls
+                //TileID.LongMoss,  //sticks to walls
+                TileID.Plants,
+                TileID.Plants2,
+                TileID.HallowedPlants,
+                TileID.HallowedPlants2,
+                TileID.CorruptPlants,
+                TileID.CrimsonPlants,
+                TileID.JunglePlants,
+                TileID.JunglePlants2,
+                TileID.DyePlants,
+                TileID.MushroomPlants,
+                TileID.PottedPlants1,
+                TileID.PottedPlants2,
+                TileID.PottedLavaPlants,
+                TileID.PottedCrystalPlants,
+                TileID.OasisPlants,
+                //TileID.Rope,  //ropes are checked via tileRope instead
+                TileID.VineFlowers,
+                TileID.Vines,
+                TileID.CrimsonVines,
+                TileID.HallowedVines,
+                TileID.JungleVines,
+                TileID.MushroomVines,
+                324,    //seashells
+                TileID.VanityTreeSakuraSaplings,
+                TileID.VanityTreeWillowSaplings,
+                TileID.SeaOats,
+                TileID.Cattail,
+                TileID.LilyPad,
+                185,    //small piles, needs a check for only tiles with a style of 11 or below
+                TileID.WaterDrip,//these 4 are here so they dont become solid tiles
+                TileID.SandDrip,
+                TileID.HoneyDrip,
+                TileID.LavaDrip
+            };
+
+            FourSidedTiles = new HashSet<ushort>
+            {
+                TileID.MetalBars,
+                TileID.Trees,
+                TileID.TreeDiamond,
+                TileID.TreeEmerald,
+                TileID.TreeAmber,
+                TileID.TreeAmethyst,
+                TileID.TreeRuby,
+                TileID.TreeSapphire,
+                TileID.TreeTopaz,
+                TileID.MushroomTrees,
+                TileID.PalmTree,
+                TileID.PineTree,
+                TileID.VanityTreeSakura,
+                TileID.VanityTreeYellowWillow
+            };
+
+            //FourSidedTilesBL = new HashSet<ushort>
+            //{
+            //    TileID.CorruptThorns,
+            //    TileID.CrimsonThorns,
+            //    TileID.JungleThorns,
+            //    TileID.Cactus
+            //};
+        }
+
+        public override void Unload()
+        {
+            base.Unload();
+        }
+
         public void PlaceTile(ushort type, int x, int y, int z)
         {
             AreaArray[x, y, z].TileType = type;
@@ -364,7 +468,7 @@ namespace SuperUltraFishing
             //Later todo: find out why water passable tiles set set as the last valid tile
             //Later todo: set Z distance to max when edge of world has been met
 
-            int lastTileType = 1;
+            ushort lastTileType = 1;
             for (int j = 0; j < worldArea.Height; j++)
             {
                 int yoffset = ((int)worldAreaCorner.Y + j);
@@ -402,14 +506,15 @@ namespace SuperUltraFishing
                     Point position = new Point(worldArea.X + i, yWorld);
                     Tile vanillaTile = Main.tile[position];
 
+                    //center slice
                     AreaArray[xoffset, yoffset, (int)worldAreaCorner.Z] = new BasicTile()
                     {
                         Active = vanillaTile.HasTile,
                         TileType = vanillaTile.TileType,
                         BlockType = vanillaTile.BlockType,
                         Color = vanillaTile.TileColor,
-                        TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY)
-
+                        TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY),
+                        Collide = !(CrossTile.Contains(vanillaTile.TileType) || (!Main.tileSolid[vanillaTile.TileType] || Main.tileSolidTop[vanillaTile.TileType]))
                     };
 
                     float featureScale = 5f;//smaller = larger scale
@@ -441,15 +546,16 @@ namespace SuperUltraFishing
 
                             AreaArray[xoffset, yoffset, zoffset] = new BasicTile()
                             {
-                                Active = 
+                                Active =
                                 ((belowWaterHeight || (aboveWaterLeftDist > 0 && aboveWaterRightDist > 0)) && zoffset == (AreaSizeZ - 1)) ||
                                 (belowWaterHeight && ((!validValue || distance == 0))) || //invalid tiles, or valid ones that are part of ground (originally was just 'belowWaterHeight && !validValue' but this caused some issues withit being wider than the center array
-                                inDistance || 
+                                inDistance ||
                                 (!belowWaterHeight && !WaterPassThough(vanillaTile) && vanillaTile.HasTile && aboveWaterWall),
                                 TileType = lastTileType,
                                 BlockType = vanillaTile.BlockType,
                                 Color = vanillaTile.TileColor,
                                 TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY)
+                                //collide is left out as the sides should never be a passable tile
                             };
                         }
 
@@ -477,6 +583,7 @@ namespace SuperUltraFishing
                                 BlockType = vanillaTile.BlockType,
                                 Color = vanillaTile.TileColor,
                                 TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY)
+                                //collide is left out as the sides should never be a passable tile
                             };
                         }
                     }
@@ -500,24 +607,23 @@ namespace SuperUltraFishing
             //    }
             //}
 
-            AreaArray[(int)areaCenter.X, (int)areaCenter.Y, (int)areaCenter.Z] = new BasicTile()
-            {
-                Active = true,
-                TileType = TileID.LunarOre
-            };
+            //AreaArray[(int)areaCenter.X, (int)areaCenter.Y, (int)areaCenter.Z] = new BasicTile()
+            //{
+            //    Active = true,
+            //    TileType = TileID.LunarOre
+            //};
 
+            //AreaArray[AreaSizeX - 1, AreaSizeY - 1, AreaSizeZ - 1] = new BasicTile()
+            //{
+            //    Active = true,
+            //    TileType = TileID.SolarBrick
+            //};
 
-            AreaArray[AreaSizeX - 1, AreaSizeY - 1, AreaSizeZ - 1] = new BasicTile()
-            {
-                Active = true,
-                TileType = TileID.SolarBrick
-            };
-
-            AreaArray[0, 0, 0] = new BasicTile()
-            {
-                Active = true,
-                TileType = TileID.StardustBrick
-            };
+            //AreaArray[0, 0, 0] = new BasicTile()
+            //{
+            //    Active = true,
+            //    TileType = TileID.StardustBrick
+            //};
         }
 
         public bool GenerateWorld(Point16 worldLocation)

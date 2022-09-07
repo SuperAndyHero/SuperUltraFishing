@@ -14,11 +14,13 @@ namespace SuperUltraFishing
 
         public bool Active = false;
 
-        public int TileType = 0;
+        public ushort TileType = 0;
 
         public Vector2 TileFrame = Vector2.Zero;//used for frame important tiles only
 
         public BlockType BlockType = BlockType.Solid;
+
+        public bool Collide = true;
 
         public byte Color = 0;
 
