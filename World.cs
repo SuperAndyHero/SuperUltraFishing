@@ -30,10 +30,10 @@ namespace SuperUltraFishing
         public Point16 LastWorldLocation = Point16.Zero;
 
 
-        public HashSet<ushort> FourSidedTiles;
+        public static HashSet<ushort> FourSidedTiles;
 
         //public HashSet<ushort> FourSidedTilesBL;
-        public HashSet<ushort> CrossTile;
+        public static HashSet<ushort> CrossTile;
 
         public override void Load()
         {
@@ -514,8 +514,9 @@ namespace SuperUltraFishing
                         BlockType = vanillaTile.BlockType,
                         Color = vanillaTile.TileColor,
                         TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY),
-                        Collide = !(CrossTile.Contains(vanillaTile.TileType) || (!Main.tileSolid[vanillaTile.TileType] || Main.tileSolidTop[vanillaTile.TileType]))
+                        Collide = (Main.tileSolid[vanillaTile.TileType] || !Main.tileSolidTop[vanillaTile.TileType])
                     };
+                    AreaArray[xoffset, yoffset, (int)worldAreaCorner.Z].GetTileModel();
 
                     float featureScale = 5f;//smaller = larger scale
                     float widthMultiplier = 0.93f;//how much of an effect distance from edges has, lower makes the terrain wider
@@ -557,6 +558,7 @@ namespace SuperUltraFishing
                                 TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY)
                                 //collide is left out as the sides should never be a passable tile
                             };
+                            AreaArray[xoffset, yoffset, zoffset].GetTileModel();
                         }
 
                         for (int k = 1; k < (AreaSizeZ / 2f) + evenOffset; k++)
@@ -585,6 +587,7 @@ namespace SuperUltraFishing
                                 TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY)
                                 //collide is left out as the sides should never be a passable tile
                             };
+                            AreaArray[xoffset, yoffset, zoffset].GetTileModel();
                         }
                     }
                 }

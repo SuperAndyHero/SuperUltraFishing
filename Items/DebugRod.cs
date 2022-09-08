@@ -1,7 +1,10 @@
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Terraria.ObjectData;
 using static Terraria.ModLoader.ModContent;
 
 namespace SuperUltraFishing.Items
@@ -28,6 +31,7 @@ namespace SuperUltraFishing.Items
 			Item.rare = 2;
 			Item.UseSound = SoundID.Item1;
 			Item.autoReuse = true;
+			Item.createTile = ModContent.TileType<Debug>();
 		}
 
 		public override void AddRecipes()
@@ -44,5 +48,38 @@ namespace SuperUltraFishing.Items
 
 			return true;
         }
+
+		public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
+		{
+			//Main.graphics.GraphicsDevice.RasterizerState.FillMode = FillMode.Solid;
+			return true;
+        }
+	}
+
+	public class Debug : ModTile
+    {
+		public override void SetStaticDefaults()
+		{
+			Main.tileShine[Type] = 1100;
+			Main.tileSolid[Type] = true;
+			Main.tileSolidTop[Type] = true;
+			Main.tileFrameImportant[Type] = true;
+
+			TileObjectData.newTile.CopyFrom(TileObjectData.Style1x1);
+			TileObjectData.newTile.StyleHorizontal = true;
+			TileObjectData.newTile.LavaDeath = false;
+			TileObjectData.addTile(Type);
+		}
+
+        public override void DrawEffects(int i, int j, SpriteBatch spriteBatch, ref TileDrawInfo drawData)
+        {
+			//Main.instance.TilesRenderer.AddSpecialLegacyPoint(new Point(i, j));
+			//Main.graphics.GraphicsDevice.RasterizerState.FillMode = FillMode.Solid;
+			base.DrawEffects(i, j, spriteBatch, ref drawData);
+        }
+        public override void SpecialDraw(int i, int j, SpriteBatch spriteBatch)
+        {
+			//Main.graphics.GraphicsDevice.RasterizerState.FillMode = FillMode.WireFrame;
+		}
     }
 }
