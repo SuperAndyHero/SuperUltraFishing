@@ -22,10 +22,13 @@ namespace SuperUltraFishing
 {
     internal class FishingUIWindow : ModSystem
     {
+        public bool DebugMode = false;
         public bool WindowActive = false;
 
         private World world;
         private Rendering rendering;
+        private RobotPlayer player;
+        private Entity entity;
 
         public Point16 selectedPointA = Point16.Zero;
         public Point16 selectedPointB = Point16.Zero;
@@ -34,6 +37,8 @@ namespace SuperUltraFishing
         {
             world = GetInstance<World>();
             rendering = GetInstance<Rendering>();
+            player = GetInstance<RobotPlayer>();
+            entity = GetInstance<Entity>();
         }
 
         public void ActivateWindow(Point16 worldLocation)
@@ -47,7 +52,7 @@ namespace SuperUltraFishing
                 return;
 
             rendering.BuildVertexBuffer();
-            rendering.ResetCamera();
+            player.Reset();
 
 
             Main.NewText("Starting window");
@@ -94,7 +99,8 @@ namespace SuperUltraFishing
             //start window
             if (Main.keyState.IsKeyDown(Keys.NumPad8) && !Main.oldKeyState.IsKeyDown(Keys.NumPad8))
             {
-
+                Main.NewText("Toggled Debug");
+                DebugMode = !DebugMode;
             }
 
             //toggle window active
@@ -108,14 +114,6 @@ namespace SuperUltraFishing
 
             if (WindowActive)
             {
-                //Close window with escape
-                //todo: add confirm message
-                if (Main.keyState.IsKeyDown(Keys.Escape) && !Main.oldKeyState.IsKeyDown(Keys.Escape))
-                    WindowActive = false;
-
-                Main.LocalPlayer.frozen = true;
-                Main.cursorScale = 0;
-
                 //regen tile array
                 if (Main.keyState.IsKeyDown(Keys.NumPad0) && !Main.oldKeyState.IsKeyDown(Keys.NumPad0))
                 {
@@ -130,6 +128,15 @@ namespace SuperUltraFishing
                     rendering.BuildVertexBuffer();
                 }
 
+                //Close window with escape
+                //todo: add confirm message
+                if (Main.keyState.IsKeyDown(Keys.Escape) && !Main.oldKeyState.IsKeyDown(Keys.Escape))
+                    WindowActive = false;
+
+                Main.LocalPlayer.frozen = true;
+                Main.LocalPlayer.statLife = Main.LocalPlayer.statLifeMax;//temp solution, this needs to freeze health instead to prevent exploits
+                Main.cursorScale = 0;
+
                 //lock mouse to center
                 if ((new Vector2(Main.mouseX, Main.mouseY) - new Vector2(Main.screenWidth / 2, Main.screenHeight / 2)).Length() > 200)
                 {
@@ -142,30 +149,7 @@ namespace SuperUltraFishing
                     lastMouseY = Main.mouseY - mouseYdiff;
                 }
 
-                rendering.CameraYaw -= (Main.mouseX - lastMouseX) * 0.001f;
-                rendering.CameraPitch -= (Main.mouseY - lastMouseY) * 0.003f;
-
-                if (Main.keyState.IsKeyDown(Keys.Down))
-                    rendering.CameraPitch -= 0.015f;
-                if (Main.keyState.IsKeyDown(Keys.Up))
-                    rendering.CameraPitch += 0.015f;
-                if (Main.keyState.IsKeyDown(Keys.Left))
-                    rendering.CameraYaw += 0.015f;
-                if (Main.keyState.IsKeyDown(Keys.Right))
-                    rendering.CameraYaw -= 0.015f;
-
-                Vector3 newDir = Vector3.Zero;
-                float moveAmount = Main.keyState.IsKeyDown(Keys.LeftShift) ? 3 : 1;
-                if (Main.keyState.IsKeyDown(Keys.S))
-                    newDir.Z += moveAmount;
-                if (Main.keyState.IsKeyDown(Keys.W))
-                    newDir.Z -= moveAmount;
-                if (Main.keyState.IsKeyDown(Keys.A))
-                    newDir.X -= moveAmount;
-                if (Main.keyState.IsKeyDown(Keys.D))
-                    newDir.X += moveAmount;
-
-                rendering.CameraPosition += Vector3.Transform(newDir, Matrix.CreateFromYawPitchRoll(rendering.CameraYaw, rendering.CameraPitch, 0));
+                player.UpdateInput(lastMouseX, lastMouseY);
 
                 lastMouseX = Main.mouseX;
                 lastMouseY = Main.mouseY;

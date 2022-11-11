@@ -28,6 +28,10 @@ namespace SuperUltraFishing
         public AlphaTestEffect AlphaEffect;
         //public Effect FlatColorEffect;
 
+        public Vector3 CameraPosition = Vector3.Zero;
+        public float CameraYaw = 0;
+        public float CameraPitch = 0;
+
         //public List<VertexPositionColorTexture> TileMeshVertices = new();
         //public VertexBuffer VertBuffer;
 
@@ -39,13 +43,10 @@ namespace SuperUltraFishing
         public RasterizerState FlatColorRasterizer = new RasterizerState() { };
         public RasterizerState TexturedRasterizer = new RasterizerState() { DepthBias = -0.0001f };
 
-        public Vector3 CameraPosition = Vector3.Zero;
-        public float CameraYaw = 0;
-        public float CameraPitch = 0;
-
         public bool VertexBufferBuilt = false;
 
         private World world;
+        private RobotPlayer player;
         private FishingUIWindow fishingUIWindow;
 
         public static Color[] colorLookup;
@@ -58,6 +59,7 @@ namespace SuperUltraFishing
         public override void PostAddRecipes()
         {
             world = GetInstance<World>();
+            player = GetInstance<RobotPlayer>();
             fishingUIWindow = GetInstance<FishingUIWindow>();
         }
         public override void Load()
@@ -109,13 +111,6 @@ namespace SuperUltraFishing
             });
         }
 
-        public void ResetCamera()
-        {
-            CameraPosition = Vector3.Zero;
-            CameraYaw = 0;
-            CameraPitch = 0;
-        }
-
         //draw vertex buffer to render target
         //public override void PostDrawInterface(SpriteBatch spriteBatch)
         //{
@@ -126,8 +121,13 @@ namespace SuperUltraFishing
         {
             if (fishingUIWindow.WindowActive)
             {
-                if (!VertexBufferBuilt)//a
+                if (!VertexBufferBuilt)
                     return;
+
+                //seperated player and camera for future 
+                CameraPosition = player.Position;
+                CameraPitch = player.Pitch;
+                CameraYaw = player.Yaw;
 
                 //Main.NewText("yaw: " + CameraYaw);
                 //Main.NewText("pitch: " + CameraPitch);
@@ -434,7 +434,7 @@ namespace SuperUltraFishing
 
                                     //bottom
                                     if (tileState.BottomFace.active)
-                                        AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), brightnessColor, tileTexture, tileState.BottomFace.Frame);
+                                        AddQuad(new Vector3(x, y, z), new Vector3(0, (float)Math.PI, 0), brightnessColor, tileTexture, tileState.BottomFace.Frame, SpriteEffects.FlipVertically);
 
                                     //front
                                     if (tileState.FrontFace.active)
