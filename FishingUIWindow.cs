@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoMod.RuntimeDetour;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -134,6 +133,9 @@ namespace SuperUltraFishing
                     WindowActive = false;
 
                 Main.LocalPlayer.frozen = true;
+                Main.LocalPlayer.noKnockback = true;
+                Main.LocalPlayer.immune = true;
+                Main.LocalPlayer.immuneTime = 10;
                 Main.LocalPlayer.statLife = Main.LocalPlayer.statLifeMax;//temp solution, this needs to freeze health instead to prevent exploits
                 Main.cursorScale = 0;
 

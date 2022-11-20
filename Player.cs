@@ -43,6 +43,7 @@ namespace SuperUltraFishing
         public void Reset()
         {
             Position = new Vector3(world.AreaSizeX, world.AreaSizeY, world.AreaSizeZ) * 4;
+            Velocity = Vector3.Zero;
             Yaw = 0;
             Pitch = 0;
             movementSpeed = 0.033f;
@@ -54,6 +55,7 @@ namespace SuperUltraFishing
             {
                 Yaw -= (Main.mouseX - lastMouseX) * 0.001f;
                 Pitch -= (Main.mouseY - lastMouseY) * 0.003f;
+                Pitch = Math.Clamp(Pitch, -((float)Math.PI / 2) + 0.05f, (float)Math.PI / 2 - 0.05f);
 
                 if (Main.keyState.IsKeyDown(Keys.Down))
                     Pitch -= 0.015f;

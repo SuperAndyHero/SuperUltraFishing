@@ -17,6 +17,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI;
 using static Terraria.ModLoader.ModContent;
+using ReLogic.Content;
 
 namespace SuperUltraFishing
 {
@@ -26,7 +27,11 @@ namespace SuperUltraFishing
         public BasicEffect BasicEffect;
         public BasicEffect FlatColorEffect;
         public AlphaTestEffect AlphaEffect;
+        public Effect WaterShimmerEffect;
         //public Effect FlatColorEffect;
+
+        public Texture2D LargePerlin;
+        public Texture2D SmallPerlin;
 
         public Vector3 CameraPosition = Vector3.Zero;
         public float CameraYaw = 0;
@@ -71,6 +76,9 @@ namespace SuperUltraFishing
             {
                 if (!Main.dedServ)
                 {
+                    SmallPerlin = ModContent.Request<Texture2D>("SuperUltraFishing/Effects/SmallPerlin").Value;
+                    LargePerlin = ModContent.Request<Texture2D>("SuperUltraFishing/Effects/LargePerlin").Value;
+
                     WindowTarget = new RenderTarget2D(Main.graphics.GraphicsDevice, Main.screenWidth, Main.screenHeight, false, default, DepthFormat.Depth24Stencil8);
 
                     BasicEffect = new BasicEffect(Main.graphics.GraphicsDevice)
@@ -102,6 +110,7 @@ namespace SuperUltraFishing
                     AlphaEffect.Projection = BasicEffect.Projection;
                     AlphaEffect.World = BasicEffect.World;
 
+                    WaterShimmerEffect = base.Mod.Assets.Request<Effect>("Effects/WaterShimmer", AssetRequestMode.ImmediateLoad).Value;
 
                     //FlatColorEffect = Mod.Assets.Request<Effect>("Effects/FlatColor", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value;
                     //FlatColorEffect.Parameters["World"].SetValue(BasicEffect.World);
@@ -190,16 +199,30 @@ namespace SuperUltraFishing
                         //BasicEffect.CurrentTechnique.Passes[0].Apply();
                         //Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
                     }
-
-
                     //Main.graphics.GraphicsDevice.DepthStencilState.DepthBufferEnable = true;
                     //Main.graphics.GraphicsDevice.DepthStencilState.DepthBufferWriteEnable = true;
                     //Main.graphics.GraphicsDevice.DepthStencilState.DepthBufferFunction = CompareFunction.LessEqual;
                 }
 
-                Main.graphics.GraphicsDevice.SetRenderTarget(null);
+                WaterShimmerEffect.Parameters["Offset"].SetValue(new Vector2(0, 0));
+                WaterShimmerEffect.Parameters["Strength"].SetValue(0.035f);
+                WaterShimmerEffect.Parameters["ShineSize"].SetValue(0.2f);
+                WaterShimmerEffect.Parameters["ShineLevel"].SetValue(0.25f);
+                WaterShimmerEffect.Parameters["inputTexture"].SetValue((Texture)(object)WindowTarget);
+                WaterShimmerEffect.Parameters["LargePerlinTexture"].SetValue((Texture)(object)LargePerlin);
+                WaterShimmerEffect.Parameters["SmallPerlinTexture"].SetValue((Texture)(object)SmallPerlin);
+                Main.graphics.GraphicsDevice.SetVertexBuffer(WaterBuffer);
+                foreach (EffectPass pass2 in WaterShimmerEffect.CurrentTechnique.Passes)
+                {
+                    pass2.Apply();
+                    Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, WaterBuffer.VertexCount / 3);
+                }
+
+                Main.graphics.GraphicsDevice.SetRenderTarget(null);//a
             }
         }
+        public List<VertexPositionColorTexture> WaterBufferList;
+        public VertexBuffer WaterBuffer;
 
         public void BuildVertexBuffer()
         {
@@ -207,7 +230,9 @@ namespace SuperUltraFishing
             TextureBuffers.Clear();
             TextureColor.Clear();
 
-
+            WaterBufferList = AddWaterPlane(Terraria.GameContent.TextureAssets.Tile[0].Value, Color.Aqua);
+            WaterBuffer = new VertexBuffer(Main.graphics.GraphicsDevice, typeof(VertexPositionColorTexture), WaterBufferList.Count, BufferUsage.None);
+            WaterBuffer.SetData(WaterBufferList.ToArray());
             AddFloorPlane(Terraria.GameContent.TextureAssets.Ninja.Value);
 
             BuildTileMesh();
@@ -560,6 +585,55 @@ namespace SuperUltraFishing
                 Color.Cornsilk,
                 new Vector2(0, 1));
             TextureVertices[texture].Add(vertex);
+        }
+
+        private List<VertexPositionColorTexture> AddWaterPlane(Texture2D texture, Color PlaneColor)
+        {
+            List<VertexPositionColorTexture> buffer = new List<VertexPositionColorTexture>();
+
+            float scale = 25;
+            float drop = -10;
+
+            VertexPositionColorTexture vertex = new VertexPositionColorTexture(
+                new Vector3(-scale, -drop, -scale),
+                Color.BlueViolet,
+                new Vector2(0, 0));
+            buffer.Add(vertex);
+
+            vertex = new VertexPositionColorTexture(
+                new Vector3(scale, -drop, -scale),
+                Color.Blue,
+                new Vector2(1, 0));
+            buffer.Add(vertex);
+
+            vertex = new VertexPositionColorTexture(
+                new Vector3(-scale, -drop, scale),
+                Color.CadetBlue,
+                new Vector2(0, 1));
+            buffer.Add(vertex);
+
+
+
+
+            vertex = new VertexPositionColorTexture(
+                new Vector3(scale, -drop, -scale),
+                Color.Cornsilk,
+                new Vector2(1, 0));
+            buffer.Add(vertex);
+
+            vertex = new VertexPositionColorTexture(
+                new Vector3(scale, -drop, scale),
+                Color.DeepSkyBlue,
+                 new Vector2(1, 1));
+            buffer.Add(vertex);
+
+            vertex = new VertexPositionColorTexture(
+                new Vector3(-scale, -drop, scale),
+                Color.DodgerBlue,
+                new Vector2(0, 1));
+            buffer.Add(vertex);
+
+            return buffer;
         }
     }
 }
