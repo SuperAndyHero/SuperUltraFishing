@@ -64,6 +64,7 @@ namespace SuperUltraFishing
             if (WindowActive)
             {
                 spriteBatch.Draw(rendering.WindowTarget, new Rectangle(100, 100, Main.screenWidth - 200, Main.screenHeight - 200), Color.White);
+                spriteBatch.Draw(rendering.WaterTarget, new Rectangle((int)(Main.screenWidth / 1.75f), (int)(Main.screenHeight / 1.75f), (int)(Main.screenWidth / 2.75f), (int)(Main.screenHeight / 2.75f)), Color.White);
             }
 
             //draw rest of ui here
