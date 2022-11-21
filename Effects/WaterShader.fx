@@ -1,17 +1,12 @@
-﻿texture inputTexture;
-sampler2D inputSampler = sampler_state
-{
-	texture = <inputTexture>;
-	AddressU = Wrap;
-	AddressV = Wrap;
-};
-
-texture LargePerlinTexture;
+﻿texture LargePerlinTexture;
 sampler2D LargePerlin = sampler_state
 {
 	texture = <LargePerlinTexture>;
 	AddressU = Wrap;
 	AddressV = Wrap;
+	MipFilter = LINEAR;
+	MinFilter = LINEAR;
+	MagFilter = LINEAR;
 };
 
 texture SmallPerlinTexture;
@@ -20,7 +15,12 @@ sampler2D SmallPerlin = sampler_state
 	texture = <SmallPerlinTexture>;
 	AddressU = Wrap;
 	AddressV = Wrap;
+	MipFilter = LINEAR;
+	MinFilter = LINEAR;
+	MagFilter = LINEAR;
 };
+
+float DepthScale;
 
 float2 Offset;
 float Strength;
@@ -43,6 +43,7 @@ struct VertexShaderOutput
 {
 	float2 TextureCoordinates : TEXCOORD0;
 	float4 Position : SV_POSITION;
+	float4 PositionOut : TEXCOORD1;//dupicated because you cannot access the position output from the PS in PS_2_0
 	float4 Color : COLOR0;
 };
 
@@ -52,6 +53,7 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 
 	float4 pos = mul(input.Position, WorldViewProjection);
 	output.Position = pos;
+	output.PositionOut = pos;
 
 	output.Color = input.Color;
 	output.TextureCoordinates = input.TextureCoordinates;
@@ -84,16 +86,18 @@ PixelShaderOutput main(VertexShaderOutput input) : COlOR
 	float4 colorPerlin = tex2D(LargePerlin, float2(OffsetPerlin.x,  OffsetPerlin.y));
 	float4 colorSmallPerlin = tex2D(SmallPerlin, float2(OffsetSmallPerlin.x, OffsetSmallPerlin.y));
 
-	float distFromCenter = length(uvs - float2(0.5, 0.5));
+	float2 distortColor = float2(((colorPerlin.g - (colorSmallPerlin.g * 0.40)) * Strength) / (input.PositionOut.z * DepthScale), 1);
+	output.Extra = float4(distortColor, 0, 1);
 
+	float distFromCenter = length(input.PositionOut.xy - float2(0.5, 0.5));
 
-	float3 outputColor = tex2D(inputSampler, frac(uvs + ((colorPerlin.rg - (colorSmallPerlin.rg * 0.33)) * Strength)));
-	outputColor = lerp(outputColor, input.Color.rgb, colorPerlin);
+	float4 outputColor = input.Color * colorPerlin;//disabled to debug, may move to post processing
 	if (distFromCenter < ShineSize) {
-		outputColor += (trunc(colorPerlin + (colorSmallPerlin.r * 0.5) + ShineLevel) * ((-distFromCenter + ShineSize) / ShineSize));
+		outputColor.rgb = lerp(outputColor.rgb, float3(1,1,1), (trunc(distortColor.r + ShineLevel) * ((-distFromCenter + ShineSize) / ShineSize)));
 	}
-	output.Color = float4(outputColor, input.Color.a);
-	output.Extra = float4(outputColor, input.Color.a);
+	output.Color = outputColor;
+	//output.Color = float4(0, 0, 0, 0);
+
 	return output;
 }
 

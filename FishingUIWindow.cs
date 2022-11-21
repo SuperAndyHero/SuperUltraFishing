@@ -63,11 +63,18 @@ namespace SuperUltraFishing
         {
             if (WindowActive)
             {
-                spriteBatch.Draw(rendering.WindowTarget, new Rectangle(100, 100, Main.screenWidth - 200, Main.screenHeight - 200), Color.White);
-                spriteBatch.Draw(rendering.WaterTarget, new Rectangle((int)(Main.screenWidth / 1.75f), (int)(Main.screenHeight / 1.75f), (int)(Main.screenWidth / 2.75f), (int)(Main.screenHeight / 2.75f)), Color.White);
-            }
+                spriteBatch.Draw(Terraria.GameContent.TextureAssets.BlackTile.Value, new Rectangle(100, 100, Main.screenWidth - 200, Main.screenHeight - 200), Color.Gray);
+                spriteBatch.End();
 
-            //draw rest of ui here
+                rendering.WaterPostProcessEffect.Parameters["DistortMap"].SetValue((Texture)(object)rendering.WaterTarget);
+                spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone, rendering.WaterPostProcessEffect, Main.UIScaleMatrix);
+                spriteBatch.Draw(rendering.WindowTarget, new Rectangle(100, 100, Main.screenWidth - 200, Main.screenHeight - 200), Color.White);
+                spriteBatch.End();
+
+                spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone, null, Main.UIScaleMatrix);
+                //spriteBatch.Draw(rendering.WaterTarget, new Rectangle((int)(Main.screenWidth / 1.75f), (int)(Main.screenHeight / 1.75f), (int)(Main.screenWidth / 2.75f), (int)(Main.screenHeight / 2.75f)), Color.White);
+                //draw rest of ui here
+            }
         }
 
         private int lastMouseX = 0;
