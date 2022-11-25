@@ -47,6 +47,9 @@ namespace SuperUltraFishing
         public Dictionary<Texture2D, Color> TextureColor = new Dictionary<Texture2D, Color>();
         //this could use a 1x1 texture instead, which would reduce the amount of SetVertexBuffer, and needing to change the rasterizer state
 
+        public List<VertexPositionColorTexture> WaterBufferList = new List<VertexPositionColorTexture>();
+        public VertexBuffer WaterBuffer;
+
         public RasterizerState FlatColorRasterizer = new RasterizerState() { };
         public RasterizerState TexturedRasterizer = new RasterizerState() { DepthBias = -0.0001f };
 
@@ -156,10 +159,10 @@ namespace SuperUltraFishing
                 //todo: http://www.catalinzima.com/xna/tutorials/deferred-rendering-in-xna/point-lights/
 
                 BasicEffect.FogEnabled = AlphaEffect.FogEnabled = FlatColorEffect.FogEnabled = false;
-                //BasicEffect.FogEnabled = FlatColorEffect.FogEnabled = true;
+                //BasicEffect.FogEnabled = AlphaEffect.FogEnabled = FlatColorEffect.FogEnabled = true;
                 BasicEffect.FogColor = AlphaEffect.FogColor = FlatColorEffect.FogColor = new Vector3(0.12f, 0.12f, 0.35f);
-                BasicEffect.FogStart = AlphaEffect.FogStart = FlatColorEffect.FogStart = 0;
-                BasicEffect.FogEnd = AlphaEffect.FogEnd = FlatColorEffect.FogEnd = 200;
+                BasicEffect.FogStart = AlphaEffect.FogStart = FlatColorEffect.FogStart = 10;
+                BasicEffect.FogEnd = AlphaEffect.FogEnd = FlatColorEffect.FogEnd = 250;
 
                 BasicEffect.AmbientLightColor = new Vector3(0.3f, 0.3f, 0.3f);
 
@@ -231,22 +234,20 @@ namespace SuperUltraFishing
                 Main.graphics.GraphicsDevice.SetRenderTarget(null);
             }
         }
-        public List<VertexPositionColorTexture> WaterBufferList;
-        public VertexBuffer WaterBuffer;
 
         public void BuildVertexBuffer()
         {
             TextureVertices.Clear();
             TextureBuffers.Clear();
             TextureColor.Clear();
+            WaterBufferList.Clear();
 
-            WaterBufferList = AddWaterPlane(Terraria.GameContent.TextureAssets.Tile[0].Value, new Color(0.025f, 0.1f, 0.25f, 0.0f));//abcdefghij
-            WaterBuffer = new VertexBuffer(Main.graphics.GraphicsDevice, typeof(VertexPositionColorTexture), WaterBufferList.Count, BufferUsage.None);
-            WaterBuffer.SetData(WaterBufferList.ToArray());
-            //AddFloorPlane(Terraria.GameContent.TextureAssets.Ninja.Value);
+            AddFloorPlane(Terraria.GameContent.TextureAssets.Ninja.Value);
 
             BuildTileMesh();
 
+            WaterBuffer = new VertexBuffer(Main.graphics.GraphicsDevice, typeof(VertexPositionColorTexture), WaterBufferList.Count, BufferUsage.None);
+            WaterBuffer.SetData(WaterBufferList.ToArray());
 
             foreach (KeyValuePair<Texture2D, List<VertexPositionColorNormalTexture>> pair in TextureVertices)
             {
@@ -405,6 +406,26 @@ namespace SuperUltraFishing
             int sizeY = world.AreaArray.GetLength(1);
             int sizeZ = world.AreaArray.GetLength(2);
 
+            Texture2D tileTexture2 = Terraria.GameContent.TextureAssets.Background[279].Value;
+            for (float i = 0; i < (float)Math.Tau; i += 0.5f)
+            {
+                float dist = 28f;
+                Vector2 pos = new Vector2(dist, dist);
+                pos = pos.RotatedBy(i, Vector2.Zero);
+                AddQuad(new Vector3(pos.X, 0, pos.Y), new Vector3(-i - ((float)Math.PI * 0.25f), 0, (float)Math.PI / 2), Color.Gainsboro, new Vector2(30, 20), tileTexture2, new Rectangle(0, 0, tileTexture2.Width, tileTexture2.Height));
+            }
+
+            //AddWaterPlane(new Vector3(16, World.wallBuffer, 16), 0.5f, default, new Color(0.025f, 0.1f, 0.25f, 0.0f));
+            const int WaterPlaneSize = 16;
+            for (int x = 0; x < (sizeX); x += WaterPlaneSize)
+            {
+                for (int z = 0; z < (sizeZ); z += WaterPlaneSize)
+                {
+                    AddWaterPlane(new Vector3(x - 0.5f, sizeY - ((World.wallBuffer * 2) + 2.05f), (z + WaterPlaneSize) - 0.5f), WaterPlaneSize, new Vector3(0, (float)Math.PI, 0), new Color(0.045f, 0.2f, 0.45f, 0.0f));
+                    ///*debug*/AddWaterPlane(new Vector3(x - 0.5f, sizeY - ((World.wallBuffer * 2)), z - 0.5f), WaterPlaneSize, new Vector3(0, 0, 0), new Color(0.025f, 0.1f, 0.25f, 0.0f));
+                }
+            }
+
             for (int x = 0; x < sizeX; x++)
             {
                 for (int y = 0; y < sizeY; y++)
@@ -486,7 +507,17 @@ namespace SuperUltraFishing
             }
         }
 
-        private void AddQuad(Vector3 position, Vector3 ypr, Color color, Texture2D texture, Vector2 frame = default, SpriteEffects effects = SpriteEffects.None, float scale = 1f, float distFromCenter = 0.5f)
+        private void AddQuad(Vector3 position, Vector3 ypr, Color color, Texture2D texture, Vector2 framePosition = default, SpriteEffects effects = SpriteEffects.None, float scale = 1f, float distFromCenter = 0.5f)
+        {
+            AddQuad(position, ypr, color, new Vector2(scale), texture, framePosition, effects, distFromCenter);
+        }
+
+        private void AddQuad(Vector3 position, Vector3 ypr, Color color, Vector2 scale, Texture2D texture, Vector2 framePosition = default, SpriteEffects effects = SpriteEffects.None, float distFromCenter = 0.5f)
+        {
+            AddQuad(position, ypr, color, scale, texture, new Rectangle((int)framePosition.X, (int)framePosition.Y, 16, 16), effects, distFromCenter);
+        }
+
+        private void AddQuad(Vector3 position, Vector3 ypr, Color color, Vector2 scale, Texture2D texture, Rectangle frame, SpriteEffects effects = SpriteEffects.None, float distFromCenter = 0.5f)
         {
             float xSize = 1f / texture.Width;
             float ySize = 1f / texture.Height;
@@ -495,10 +526,10 @@ namespace SuperUltraFishing
                 TextureVertices[texture] = new List<VertexPositionColorNormalTexture>();
 
             float xMin = frame.X * xSize;
-            float xMax = xMin + (16 * xSize);
+            float xMax = xMin + (frame.Width * xSize);
 
             float yMin = frame.Y * ySize;
-            float yMax = yMin + (16 * ySize);
+            float yMax = yMin + (frame.Height * ySize);
 
             if (effects.HasFlag(SpriteEffects.FlipHorizontally))
                 (xMin, xMax) = (xMax, xMin);
@@ -506,41 +537,41 @@ namespace SuperUltraFishing
             if (effects.HasFlag(SpriteEffects.FlipVertically))
                 (yMin, yMax) = (yMax, yMin);
 
-            float scaleSize = 0.5f * scale;
+            Vector2 scaleSize = 0.5f * scale;
 
             VertexPositionColorNormalTexture vertex = new VertexPositionColorNormalTexture(
-                position + Vector3.Transform(new Vector3(-scaleSize, distFromCenter, -scaleSize), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                position + Vector3.Transform(new Vector3(-scaleSize.X, distFromCenter, -scaleSize.Y), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 color,
                 new Vector2(xMin, yMin));
             TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorNormalTexture(
-                position + Vector3.Transform(new Vector3(scaleSize, distFromCenter, -scaleSize), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                position + Vector3.Transform(new Vector3(scaleSize.X, distFromCenter, -scaleSize.Y), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 color,
                 new Vector2(xMax, yMin));
             TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorNormalTexture(
-                position + Vector3.Transform(new Vector3(-scaleSize, distFromCenter, scaleSize), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                position + Vector3.Transform(new Vector3(-scaleSize.X, distFromCenter, scaleSize.Y), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 color,
                 new Vector2(xMin, yMax));
             TextureVertices[texture].Add(vertex);
 
 
             vertex = new VertexPositionColorNormalTexture(
-                position + Vector3.Transform(new Vector3(scaleSize, distFromCenter, -scaleSize), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                position + Vector3.Transform(new Vector3(scaleSize.X, distFromCenter, -scaleSize.Y), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 color,
                 new Vector2(xMax, yMin));
             TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorNormalTexture(
-                position + Vector3.Transform(new Vector3(scaleSize, distFromCenter, scaleSize), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                position + Vector3.Transform(new Vector3(scaleSize.X, distFromCenter, scaleSize.Y), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 color,
                 new Vector2(xMax, yMax));
             TextureVertices[texture].Add(vertex);
 
             vertex = new VertexPositionColorNormalTexture(
-                position + Vector3.Transform(new Vector3(-scaleSize, distFromCenter, scaleSize), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
+                position + Vector3.Transform(new Vector3(-scaleSize.X, distFromCenter, scaleSize.Y), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 color,
                 new Vector2(xMin, yMax));
             TextureVertices[texture].Add(vertex);
@@ -597,53 +628,49 @@ namespace SuperUltraFishing
             TextureVertices[texture].Add(vertex);
         }
 
-        private List<VertexPositionColorTexture> AddWaterPlane(Texture2D texture, Color PlaneColor)
+        private void AddWaterPlane(Vector3 position, float scale = 1f, Vector3 ypr = default, Color PlaneColor = default)
         {
-            List<VertexPositionColorTexture> buffer = new List<VertexPositionColorTexture>();
-
-            float scale = 15;
-            float drop = -8;
+            if(WaterBufferList == null)
+                WaterBufferList = new List<VertexPositionColorTexture>();
 
             VertexPositionColorTexture vertex = new VertexPositionColorTexture(
-                new Vector3(-scale, -drop, -scale),
+                position + Vector3.Transform(new Vector3(0, 0, 0), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 PlaneColor,
                 new Vector2(0, 0));
-            buffer.Add(vertex);
+            WaterBufferList.Add(vertex);
 
             vertex = new VertexPositionColorTexture(
-                new Vector3(scale, -drop, -scale),
+                position + Vector3.Transform(new Vector3(scale, 0, 0), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 PlaneColor,
                 new Vector2(1, 0));
-            buffer.Add(vertex);
+            WaterBufferList.Add(vertex);
 
             vertex = new VertexPositionColorTexture(
-                new Vector3(-scale, -drop, scale),
+                position + Vector3.Transform(new Vector3(0, 0, scale), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 PlaneColor,
                 new Vector2(0, 1));
-            buffer.Add(vertex);
+            WaterBufferList.Add(vertex);
 
 
 
 
             vertex = new VertexPositionColorTexture(
-                new Vector3(scale, -drop, -scale),
+                position + Vector3.Transform(new Vector3(scale, 0, 0), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 PlaneColor,
                 new Vector2(1, 0));
-            buffer.Add(vertex);
+            WaterBufferList.Add(vertex);
 
             vertex = new VertexPositionColorTexture(
-                new Vector3(scale, -drop, scale),
+                position + Vector3.Transform(new Vector3(scale, 0, scale), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 PlaneColor,
                  new Vector2(1, 1));
-            buffer.Add(vertex);
+            WaterBufferList.Add(vertex);
 
             vertex = new VertexPositionColorTexture(
-                new Vector3(-scale, -drop, scale),
+                position + Vector3.Transform(new Vector3(0, 0, scale), Quaternion.CreateFromYawPitchRoll(ypr.X, ypr.Y, ypr.Z)),
                 PlaneColor,
                 new Vector2(0, 1));
-            buffer.Add(vertex);
-
-            return buffer;
+            WaterBufferList.Add(vertex);
         }
     }
 }

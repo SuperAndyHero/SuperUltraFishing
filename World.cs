@@ -158,7 +158,7 @@ namespace SuperUltraFishing
         const int minLiquid = 32;
         const int maxLakeRectSize = 1000;
         const int surfaceTryDistance = 64;
-        const int wallBuffer = 5;//maybe make a seperate surface buffer
+        public const int wallBuffer = 5;//maybe make a seperate surface buffer
         public Rectangle? FindWorldRect(Point16 start)//returns null if invalid, returns a rectangle if successful
         {
             Tile startTile = Main.tile[start.X, start.Y];
