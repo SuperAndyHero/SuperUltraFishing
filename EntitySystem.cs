@@ -20,7 +20,7 @@ using static Terraria.ModLoader.ModContent;
 
 namespace SuperUltraFishing
 {
-    internal class Entity : ModSystem
+    internal class EntitySystem : ModSystem
     {
 
     }

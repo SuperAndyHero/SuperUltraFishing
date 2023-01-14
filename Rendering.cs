@@ -97,7 +97,6 @@ namespace SuperUltraFishing
                     BasicEffect.Projection = Matrix.CreatePerspectiveFieldOfView((float)Math.PI / 2f, (float)Main.screenWidth / (float)Main.screenHeight, 1, 2000);
                     BasicEffect.World = Matrix.CreateWorld(Vector3.Zero, Vector3.Forward, Vector3.Up) * Matrix.CreateScale(10);
 
-
                     FlatColorEffect = new BasicEffect(Main.graphics.GraphicsDevice)
                     {
                         VertexColorEnabled = true,
@@ -149,10 +148,11 @@ namespace SuperUltraFishing
 
                 //Main.graphics.GraphicsDevice.SetRenderTarget(WindowTarget);
                 Main.graphics.GraphicsDevice.SetRenderTargets(WindowTarget, WaterTarget);
-                Main.graphics.GraphicsDevice.Clear(Color.Transparent);
+                //todo: causes issue because of wrap since a blank texture is sometimes made by making the uv map off the edge
+                Main.graphics.GraphicsDevice.Clear(Color.Transparent);//background color is drawn via rectangle, needs to be transparent for distortion shader
                 Main.graphics.GraphicsDevice.DepthStencilState = DepthStencilState.Default;//needed or earlier drawn tiles appear in front
                 Main.graphics.GraphicsDevice.BlendState = BlendState.AlphaBlend;//needed or a similar issue as above happens
-                Main.graphics.GraphicsDevice.SamplerStates[0] = SamplerState.PointClamp;//keeps the quads pixel perfect
+                Main.graphics.GraphicsDevice.SamplerStates[0] = SamplerState.PointWrap;//keeps the quads pixel perfect, and allows the background ring to loop
 
                 BasicEffect.View = AlphaEffect.View = FlatColorEffect.View = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
 
@@ -174,7 +174,13 @@ namespace SuperUltraFishing
                 foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
                 {
                     Main.graphics.GraphicsDevice.SetVertexBuffer(pair.Value);
-                    Color flatColor = TextureColor[pair.Key];
+
+                    Color flatColor;
+                    if (TextureColor.TryGetValue(pair.Key, out Color color))
+                        flatColor = color;
+                    else
+                        flatColor = Color.Transparent;
+
                     if (flatColor.A != 0)
                     {
                         FlatColorEffect.AmbientLightColor = TextureColor[pair.Key].ToVector3() * BasicEffect.AmbientLightColor;
@@ -192,6 +198,7 @@ namespace SuperUltraFishing
                     else
                     {
                         //Main.graphics.GraphicsDevice.DepthStencilState.DepthBufferWriteEnable = false;
+
                         AlphaEffect.Texture = pair.Key;
                         AlphaEffect.CurrentTechnique.Passes[0].Apply();
                         AlphaEffect.AlphaFunction = CompareFunction.GreaterEqual;
@@ -406,13 +413,20 @@ namespace SuperUltraFishing
             int sizeY = world.AreaArray.GetLength(1);
             int sizeZ = world.AreaArray.GetLength(2);
 
-            Texture2D tileTexture2 = Terraria.GameContent.TextureAssets.Background[279].Value;
-            for (float i = 0; i < (float)Math.Tau; i += 0.5f)
+            Texture2D tileTexture2 = ModContent.Request<Texture2D>("Terraria/Images/Background_55", AssetRequestMode.ImmediateLoad).Value;
+
+            int planeCount = 8;
+            int loopCount = 4;
+            float distMult = 2f;
+            float worldHeight = 10;
+            float inc = (float)Math.Tau / planeCount;
+            for (float i = 0.01f; i < (float)Math.Tau; i += inc)
             {
-                float dist = 28f;
+                float dist = 25.70f * distMult;
                 Vector2 pos = new Vector2(dist, dist);
                 pos = pos.RotatedBy(i, Vector2.Zero);
-                AddQuad(new Vector3(pos.X, 0, pos.Y), new Vector3(-i - ((float)Math.PI * 0.25f), 0, (float)Math.PI / 2), Color.Gainsboro, new Vector2(30, 20), tileTexture2, new Rectangle(0, 0, tileTexture2.Width, tileTexture2.Height));
+                AddQuad(new Vector3(pos.X + (world.AreaSizeX / 2),  (world.AreaSizeY + worldHeight), pos.Y + (world.AreaSizeZ / 2)), new Vector3(-i - ((float)Math.PI * 0.25f), (float)Math.PI / 2, (float)Math.PI / 2), Color.White, new Vector2(30 * distMult, (120 * distMult) / loopCount), tileTexture2, 
+                    new Rectangle((int)((tileTexture2.Width / ((float)planeCount / loopCount)) * (i / inc)), 0, tileTexture2.Width / (planeCount / loopCount), tileTexture2.Height));
             }
 
             //AddWaterPlane(new Vector3(16, World.wallBuffer, 16), 0.5f, default, new Color(0.025f, 0.1f, 0.25f, 0.0f));

@@ -27,7 +27,7 @@ namespace SuperUltraFishing
         private World world;
         private Rendering rendering;
         private RobotPlayer player;
-        private Entity entity;
+        private EntitySystem entitySystem;
 
         public Point16 selectedPointA = Point16.Zero;
         public Point16 selectedPointB = Point16.Zero;
@@ -37,7 +37,7 @@ namespace SuperUltraFishing
             world = GetInstance<World>();
             rendering = GetInstance<Rendering>();
             player = GetInstance<RobotPlayer>();
-            entity = GetInstance<Entity>();
+            entitySystem = GetInstance<EntitySystem>();
         }
 
         public void ActivateWindow(Point16 worldLocation)
@@ -63,7 +63,8 @@ namespace SuperUltraFishing
         {
             if (WindowActive)
             {
-                spriteBatch.Draw(Terraria.GameContent.TextureAssets.BlackTile.Value, new Rectangle(100, 100, Main.screenWidth - 200, Main.screenHeight - 200), Color.Gray);
+                Color backgroundColor = new Color(0, 170, 230, 255);
+                spriteBatch.Draw(Terraria.GameContent.TextureAssets.BlackTile.Value, new Rectangle(100, 100, Main.screenWidth - 200, Main.screenHeight - 200), backgroundColor);
                 spriteBatch.End();
 
                 rendering.WaterPostProcessEffect.Parameters["DistortMap"].SetValue((Texture)(object)rendering.WaterTarget);

@@ -1,5 +1,8 @@
+using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SuperUltraFishing.UI;
+using System.Threading.Tasks;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -34,17 +37,28 @@ namespace SuperUltraFishing.Items
 
         public override bool? UseItem(Player player)
         {
-            Vector2 pos = (Main.MouseWorld / 16);
-			if(Vector2.Distance((player.Center / 16), pos) < 31)
-				GetInstance<FishingUIWindow>().ActivateWindow(pos.ToPoint16());
+			if (player.altFunctionUse == 2)
+			{
+				ModContent.GetInstance<RobotUISystem>().ShowUI(player.Center);
+            }
+			else
+			{
+				Vector2 pos = (Main.MouseWorld / 16);
+				if (Vector2.Distance((player.Center / 16), pos) < 31)
+				{
+					Main.RunOnMainThread(() => GetInstance<FishingUIWindow>().ActivateWindow(pos.ToPoint16()));
+                }
+			}
 
 			return true;
         }
 
-		//public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
-		//{
-			
-		//	return true;
-  //      }
-	}
+		public override bool AltFunctionUse(Player player) => true;
+
+        //public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
+        //{
+
+        //	return true;
+        //      }
+    }
 }

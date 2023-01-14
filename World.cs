@@ -308,7 +308,7 @@ namespace SuperUltraFishing
         public (Dictionary<Point, float> TilePosDist, List<(Point16 center, int waterCount)>) WaterBodyScan(Rectangle worldArea)
         {
 
-            HashSet<Point> checkedPoints = new HashSet<Point>();
+            HashSet<Point> checkedPoints = new HashSet<Point>();//all checked water block positions, gets added to by CrawlWaterBody
 
             Dictionary<Point, float> CombinedDict = new Dictionary<Point, float>();
             List<(Point16 center, int count)> waterBodyList = new List<(Point16 center, int count)>();
@@ -348,18 +348,18 @@ namespace SuperUltraFishing
 
             Point average = Point.Zero;
 
-            //starts out by adding start position to each list since its a known correct tile
-            tileLocationList.Add(startPosition);
-            checkSurroundQueue.Enqueue(startPosition);
-            checkedPoints.Add(startPosition);
 
             int totalWater = 0;//could use the pointAverageList count instead
 
+            //starts out by adding start position to each list since its a known correct tile
+            CheckAddWaterTile(startPosition);//this needs to be ran instead of adding the pos to lists seperately since otherwise the middle tile will not be counted and a div by zero will occur
+
             for (int i = 0; i < MaxCheckedWaterTiles; i++)
             {
-                if (checkSurroundQueue.Count == 0)
-                    break;
+                if (checkSurroundQueue.Count == 0)//if there are no more tiles to check break
+                    break;  
 
+                //recursively checks surrounding water blocks and adds them to the queue
                 Point pos = checkSurroundQueue.Dequeue();
 
                 CheckAddWaterTile(pos + new Point(0, -1));
@@ -428,7 +428,8 @@ namespace SuperUltraFishing
                 tileGroundDistance.Add(new KeyValuePair<Point, float>(waterPos, nearestPoint));
             }
 
-            average /= new Point(totalWater, totalWater);
+            //gets middle point
+            average /= new Point(totalWater, totalWater);//div by zero error?
 
             return (tileGroundDistance, (average.ToVector2().ToPoint16(), totalWater));
         }
