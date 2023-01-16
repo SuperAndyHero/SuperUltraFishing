@@ -63,7 +63,7 @@ namespace SuperUltraFishing
         {
             if (WindowActive)
             {
-                Color backgroundColor = new Color(0, 170, 230, 255);
+                Color backgroundColor = rendering.SkyColor;
                 spriteBatch.Draw(Terraria.GameContent.TextureAssets.BlackTile.Value, new Rectangle(100, 100, Main.screenWidth - 200, Main.screenHeight - 200), backgroundColor);
                 spriteBatch.End();
 
@@ -93,6 +93,18 @@ namespace SuperUltraFishing
                 Main.NewText("Point A set to: " + pos);
             }
 
+            if (Main.keyState.IsKeyDown(Keys.NumPad8) && !Main.oldKeyState.IsKeyDown(Keys.NumPad8))
+            {
+                Main.NewText("opening window via debug");
+                world.DebugGenerateWorld(new Rectangle(selectedPointA.X, selectedPointA.Y, selectedPointB.X - selectedPointA.X, selectedPointB.Y - selectedPointA.Y));
+                rendering.BuildVertexBuffer();
+                player.Reset();
+
+
+                Main.NewText("Starting window");
+                WindowActive = true;
+            }
+
             //point b
             if (Main.keyState.IsKeyDown(Keys.NumPad9) && !Main.oldKeyState.IsKeyDown(Keys.NumPad9))
             {
@@ -105,7 +117,7 @@ namespace SuperUltraFishing
             }
 
             //start window
-            if (Main.keyState.IsKeyDown(Keys.NumPad8) && !Main.oldKeyState.IsKeyDown(Keys.NumPad8))
+            if (Main.keyState.IsKeyDown(Keys.OemPeriod) && !Main.oldKeyState.IsKeyDown(Keys.OemPeriod))
             {
                 Main.NewText("Toggled Debug");
                 DebugMode = !DebugMode;

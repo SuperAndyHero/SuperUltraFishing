@@ -90,7 +90,7 @@ namespace SuperUltraFishing
                 Position += Velocity;
                 Velocity *= fishingUIWindow.DebugMode? 0 : 0.942f;
 
-                Main.NewText(Pitch);
+                //Main.NewText(Pitch);
             }
         }
     }

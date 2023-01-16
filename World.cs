@@ -153,7 +153,7 @@ namespace SuperUltraFishing
             !tile.HasTile || !Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType];//may need NotActuallySolid[]
 
         private bool ValidLiquidTile(Tile tile, int LiquidID = LiquidID.Water) =>
-            WaterPassThough(tile) && tile.LiquidType == LiquidID && tile.LiquidAmount > minLiquid;
+            WaterPassThough(tile) && tile.LiquidType == LiquidID && tile.LiquidAmount > minLiquid;//remove last 2 checks for jank no-water stuff
 
         const int minLiquid = 32;
         const int maxLakeRectSize = 1000;
@@ -644,6 +644,16 @@ namespace SuperUltraFishing
             //List<(Point16 center, int total)> waterBodyList = WaterBodyScan(worldrect.Value);
 
             CaptureWorldArea(worldrect.Value);//temp name
+
+            WorldGenerated = true;
+            return true;
+        }
+
+        public bool DebugGenerateWorld(Rectangle area)
+        {
+            Error = "";
+            WorldGenerated = false;
+            CaptureWorldArea(area);//temp name
 
             WorldGenerated = true;
             return true;
