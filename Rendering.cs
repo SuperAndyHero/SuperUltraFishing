@@ -514,48 +514,80 @@ namespace SuperUltraFishing
         {
             SkyColor = new Color(90, 170, 230, 255);
 
-            var a = Main.treeBGSet4[0];
+            var a = Main.treeBGSet2[0];
             var b = Main.snowBG;
             switch (Main.bgStyle)
             {
                 case SurfaceBackgroundID.Desert:
                     {
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[0], AssetRequestMode.ImmediateLoad).Value, worldHeight: -14);
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[1], AssetRequestMode.ImmediateLoad).Value, distance: 2.5f, worldHeight: -4, rotationOffset: (float)Math.Tau * 0.66f);
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 8, distance: 3.2f, worldHeight: 8, rotationOffset: (float)Math.Tau * 0.166f);
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[2], AssetRequestMode.ImmediateLoad).Value, worldHeight: -20, loopCount: 4, distance: 58f);
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[1], AssetRequestMode.ImmediateLoad).Value, worldHeight: 32, loopCount: 2, distance: 64f, rotationOffset: (float)Math.Tau * 0.66f);
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[0], AssetRequestMode.ImmediateLoad).Value, worldHeight: 42, loopCount: 2, distance: 76f, rotationOffset: (float)Math.Tau * 0.166f, color: new Color(230, 230, 230, 200));
+                        SkyColor = new Color(145, 165, 245, 255);
+                    }
+                    break;
+                case SurfaceBackgroundID.GoodEvilDesert:
+                    {
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + 20, AssetRequestMode.ImmediateLoad).Value, worldHeight: -24, loopCount: 4, distance: 58f, color: new Color(200, 150, 150, 255));
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + 21, AssetRequestMode.ImmediateLoad).Value, worldHeight: -10, loopCount: 6, distance: 64f, rotationOffset: (float)Math.Tau * 0.66f, color: new Color(200, 150, 150, 255));
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + 22, AssetRequestMode.ImmediateLoad).Value, worldHeight: -52, loopCount: 2, distance: 76f, rotationOffset: (float)Math.Tau * 0.166f, color: new Color(200, 150, 150, 255));
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + 23, AssetRequestMode.ImmediateLoad).Value, worldHeight: -16, loopCount: 4, distance: 84f, rotationOffset: (float)Math.Tau * 0.24f, color: new Color(200, 150, 150, 255));
+
+                        SkyColor = new Color(145, 165, 245, 255);
                     }
                     break;
                 case SurfaceBackgroundID.Forest1:
                     {
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeBGSet1[0], AssetRequestMode.ImmediateLoad).Value, worldHeight: -40, planeCount: 16, loopCount: 3, distance: 5f);
-                        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeBGSet1[1], AssetRequestMode.ImmediateLoad).Value, distMult: 2.5f, worldHeight: -4, rotationOffset: (float)Math.Tau * 0.66f);
-                        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeBGSet1[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 8, distMult: 3.2f, worldHeight: 8, rotationOffset: (float)Math.Tau * 0.166f);
+                        //TODO: most bgs have a seperate mountain array (also use second switch statement, for a total of 2 within this case)
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeBGSet1[0], AssetRequestMode.ImmediateLoad).Value, worldHeight: 20, loopCount: 2, distance: 52f);
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeMntBGSet1[1], AssetRequestMode.ImmediateLoad).Value, worldHeight: 28, loopCount: 2, distance: 72f, rotationOffset: (float)Math.Tau * 0.2f);
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeMntBGSet1[0], AssetRequestMode.ImmediateLoad).Value, worldHeight: 22, loopCount: 2, distance: 92f, rotationOffset: (float)Math.Tau * 0.2f);
+                        SkyColor = new Color(103, 142, 248, 255);
                     }
                     break;
-                //case SurfaceBackgroundID.Forest2:
-                //    {
-                //        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeBGSet2[0], AssetRequestMode.ImmediateLoad).Value, worldHeight: -4, planeCount: 16, loopCount: 2, distMult: 5f);
-                //        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeBGSet2[1], AssetRequestMode.ImmediateLoad).Value, distMult: 2.5f, worldHeight: -4, rotationOffset: (float)Math.Tau * 0.66f);
-                //        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeBGSet2[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 8, distMult: 3.2f, worldHeight: 8, rotationOffset: (float)Math.Tau * 0.166f);
-                //    }
-                //    break;
+                case SurfaceBackgroundID.Forest2:
+                    {
+                        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeBGSet2[0], AssetRequestMode.ImmediateLoad).Value, worldHeight: -4, planeCount: 16, loopCount: 2);
+                        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeBGSet2[1], AssetRequestMode.ImmediateLoad).Value, distMult: 2.5f, worldHeight: -4, rotationOffset: (float)Math.Tau * 0.66f);
+                        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.treeBGSet2[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 8, distMult: 3.2f, worldHeight: 8, rotationOffset: (float)Math.Tau * 0.166f);
+                    }
+                    break;
                 case SurfaceBackgroundID.Forest3:
                     break;
                 case SurfaceBackgroundID.Forest4:
                     break;
                 case SurfaceBackgroundID.Snow:
                     {
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: -60, loopCount: 6, distance: 64f);
+                        if(Main.snowBG[2] == 39)
+                            AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 10, loopCount: 4, distance: 64f);
+                        else
+                            AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: -60, loopCount: 6, distance: 64f);
                         AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[1], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 35, loopCount: 4, rotationOffset: MathF.Tau * 0.22f, distance: 100f);
                         AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[0], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 50, rotationOffset: MathF.Tau * 0.166f, distance: 120f);
                         SkyColor = new Color(85, 146, 168, 255);
                     }
                     break;
+                case SurfaceBackgroundID.Jungle:
+                    {
+                        switch (WorldGen.jungleBG)//todo, add secondary switch statements using the world bg value
+                        {
+
+                        }
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: -16, distance: 64f);
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[1], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 4, rotationOffset: MathF.Tau * 0.22f, distance: 72f);
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[0], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 32, rotationOffset: MathF.Tau * 0.166f, distance: 86f);
+                        SkyColor = new Color(85, 146, 168, 255);
+                    }
+                    break;
+                case SurfaceBackgroundID.Ocean:
+                    {
+                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.oceanBG, AssetRequestMode.ImmediateLoad).Value, planeCount: 16, loopCount: 6, worldHeight: -4, distance: 86f);
+                    }
+                    break;
             }
         }
-        const float distConst = 1.1191f;//remove
         const float pixelRatioFix = MathF.PI * 3 * 0.1f;
-        private void AddBackgroundRing(Texture2D texture, int planeCount = 16, int loopCount = 4, float distance = 64f, float worldHeight = 10, float rotationOffset = 0f, Vector3 offset = default)
+        private void AddBackgroundRing(Texture2D texture, int planeCount = 16, int loopCount = 4, float distance = 64f, float worldHeight = 10, float rotationOffset = 0f, Vector3 offset = default, Color color = default)
         {
             //distant = F
             //planeCount = C
@@ -575,8 +607,8 @@ namespace SuperUltraFishing
                 pos = pos.RotatedBy(i + rotationOffset, Vector2.Zero);
 
                 AddQuad(new Vector3(pos.X + (world.AreaSizeX / 2), (world.AreaSizeY + worldHeight), pos.Y + (world.AreaSizeZ / 2)) + offset,
-                    new Vector3(-(i + rotationOffset) - ((float)Math.PI * 0.25f), (float)Math.PI / 2, (float)Math.PI / 2), 
-                    Color.White, 
+                    new Vector3(-(i + rotationOffset) - ((float)Math.PI * 0.25f), (float)Math.PI / 2, (float)Math.PI / 2),
+                    color == default(Color) ? Color.White : color, 
                     new Vector2(planeWidth * MathF.PI + 0.25f, ((distance / 64f) * (texture.Height / loopCount)) * (pixelRatioFix)), texture,
                     new Rectangle((int)(frameWidth * (i / segmentAngle)), 0, (int)frameWidth, texture.Height));
             }
