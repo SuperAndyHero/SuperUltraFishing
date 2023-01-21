@@ -528,12 +528,18 @@ namespace SuperUltraFishing
                     break;
                 case SurfaceBackgroundID.GoodEvilDesert:
                     {
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + 20, AssetRequestMode.ImmediateLoad).Value, worldHeight: -24, loopCount: 4, distance: 58f, color: new Color(200, 150, 150, 255));
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + 21, AssetRequestMode.ImmediateLoad).Value, worldHeight: -10, loopCount: 6, distance: 64f, rotationOffset: (float)Math.Tau * 0.66f, color: new Color(200, 150, 150, 255));
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + 22, AssetRequestMode.ImmediateLoad).Value, worldHeight: -52, loopCount: 2, distance: 76f, rotationOffset: (float)Math.Tau * 0.166f, color: new Color(200, 150, 150, 255));
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + 23, AssetRequestMode.ImmediateLoad).Value, worldHeight: -16, loopCount: 4, distance: 84f, rotationOffset: (float)Math.Tau * 0.24f, color: new Color(200, 150, 150, 255));
-
-                        SkyColor = new Color(145, 165, 245, 255);
+                        switch (WorldGen.desertBG)
+                        {
+                            case 0:
+                                {
+                                    AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[1], AssetRequestMode.ImmediateLoad).Value, worldHeight: -24, loopCount: 4, distance: 58f, color: new Color(200, 150, 150, 255));
+                                    AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[0], AssetRequestMode.ImmediateLoad).Value, worldHeight: -10, loopCount: 6, distance: 64f, rotationOffset: (float)Math.Tau * 0.66f, color: new Color(200, 150, 150, 255));
+                                    AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + 22, AssetRequestMode.ImmediateLoad).Value, worldHeight: -30, loopCount: 2, distance: 76f, rotationOffset: (float)Math.Tau * 0.166f, color: new Color(200, 150, 150, 255));
+                                    AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + 23, AssetRequestMode.ImmediateLoad).Value, worldHeight: -10, loopCount: 4, distance: 96f, rotationOffset: (float)Math.Tau * 0.24f, color: new Color(200, 150, 150, 255));
+                                    SkyColor = new Color(145, 165, 245, 255);
+                                }
+                                break;
+                        }
                     }
                     break;
                 case SurfaceBackgroundID.Forest1:
@@ -571,11 +577,18 @@ namespace SuperUltraFishing
                     {
                         switch (WorldGen.jungleBG)//todo, add secondary switch statements using the world bg value
                         {
-
+                            case 0:
+                                AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: -24, distance: 64f);
+                                AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[1], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: -8, rotationOffset: MathF.Tau * 0.22f, distance: 72f);
+                                AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[0], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 10, rotationOffset: MathF.Tau * 0.166f, distance: 86f);
+                                break;
+                            case 5:
+                                AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: -0, loopCount: 4, distance: 64f, frameCount: 2);
+                                AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[1], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 3, loopCount: 4, rotationOffset: MathF.Tau * 0.22f, distance: 72f, frameCount: 2);
+                                AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[0], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 9, loopCount: 4, rotationOffset: MathF.Tau * 0.166f, distance: 86f, frameCount: 2);
+                                break;
                         }
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: -16, distance: 64f);
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[1], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 4, rotationOffset: MathF.Tau * 0.22f, distance: 72f);
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.jungleBG[0], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 32, rotationOffset: MathF.Tau * 0.166f, distance: 86f);
+
                         SkyColor = new Color(85, 146, 168, 255);
                     }
                     break;
@@ -587,7 +600,7 @@ namespace SuperUltraFishing
             }
         }
         const float pixelRatioFix = MathF.PI * 3 * 0.1f;
-        private void AddBackgroundRing(Texture2D texture, int planeCount = 16, int loopCount = 4, float distance = 64f, float worldHeight = 10, float rotationOffset = 0f, Vector3 offset = default, Color color = default)
+        private void AddBackgroundRing(Texture2D texture, int planeCount = 16, int loopCount = 4, float distance = 64f, float worldHeight = 10, float rotationOffset = 0f, Vector3 offset = default, Color color = default, int frameCount = 1)
         {
             //distant = F
             //planeCount = C
@@ -597,20 +610,24 @@ namespace SuperUltraFishing
             float planeWidth = MathF.Sqrt(
                 MathF.Pow(distance / MathF.Sin(planeAngle), 2) -
                 MathF.Pow(distance, 2)
-                );//d
+                ) * 1.988f;//d
 
             float frameWidth = (texture.Width / ((float)planeCount / loopCount));
+            float scaleRatio = planeWidth / frameWidth;//used to scale the height based on the ratio between the new width and old width
+
 
             for (float i = 0.01f; i < (float)Math.Tau; i += segmentAngle)
             {
-                Vector2 pos = new Vector2(distance, distance) * 1.1164f;
+                Vector2 pos = new Vector2(distance - (distance * 0.0010f), 0);//very weird const thing
                 pos = pos.RotatedBy(i + rotationOffset, Vector2.Zero);
 
                 AddQuad(new Vector3(pos.X + (world.AreaSizeX / 2), (world.AreaSizeY + worldHeight), pos.Y + (world.AreaSizeZ / 2)) + offset,
-                    new Vector3(-(i + rotationOffset) - ((float)Math.PI * 0.25f), (float)Math.PI / 2, (float)Math.PI / 2),
+                    new Vector3(-(i + rotationOffset), (float)Math.PI / 2, (float)Math.PI / 2),
                     color == default(Color) ? Color.White : color, 
-                    new Vector2(planeWidth * MathF.PI + 0.25f, ((distance / 64f) * (texture.Height / loopCount)) * (pixelRatioFix)), texture,
-                    new Rectangle((int)(frameWidth * (i / segmentAngle)), 0, (int)frameWidth, texture.Height));
+                    new Vector2(planeWidth, (texture.Height * scaleRatio) / frameCount), 
+                    texture,
+                    new Rectangle((int)(frameWidth * (i / segmentAngle)), 0, (int)frameWidth, texture.Height / frameCount));
+                    //todo: figure out animation / background cache
             }
         }
 
