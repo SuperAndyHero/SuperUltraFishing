@@ -22,7 +22,7 @@ namespace SuperUltraFishing
 
 		public static Dictionary<string, object> assetCache = new Dictionary<string, object>();
 
-		public static void Load(string xnbExtension = ".xnc")//extension name option since tml refuses to compile mods with a model xnb file in them.
+		public static void Load(string xnbExtension = ".xnb")//extension name option since tml refuses to compile mods with a model xnb file in them.
 		{
 			//This took a lot of poking around in both TML's and XNA's loading to get this to work
 			//This was then narrowed down to the minimal reflection needed
@@ -101,12 +101,16 @@ namespace SuperUltraFishing
 		/// <returns></returns>
 		public static T LoadAsset<T>(Stream stream)
 		{
-			const int offset = 10;
+			const int offset = 11;
 
             T asset = default;
             stream.Seek(offset, SeekOrigin.Begin); //skips first 10 bytes
 			using ContentReader contentReader = (ContentReader)createContentReaderConstructor_Info.Invoke(new object[] { Main.ShaderContentManager, stream, "", 0, 'w', null });
-			Main.QueueMainThreadAction(() => { //handles graphics so this must be queued on the main thread
+			var typeReaderManager = typeof(ContentTypeReaderManager).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, new Type[] { }).Invoke(null);
+			var typeReadersInfo = typeof(ContentTypeReaderManager).GetMethod("LoadAssetReaders", BindingFlags.Instance | BindingFlags.NonPublic, new Type[] { typeof(ContentReader) });
+			var typeReaders = typeReadersInfo.Invoke(typeReaderManager, new object[] { contentReader });
+
+            Main.QueueMainThreadAction(() => { //handles graphics so this must be queued on the main thread
                 asset = (T)readAsset(contentReader); });
             return asset;
         }

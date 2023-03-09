@@ -33,7 +33,7 @@ namespace SuperUltraFishing
         public static HashSet<ushort> FourSidedTiles;
 
         //public HashSet<ushort> FourSidedTilesBL;
-        public static HashSet<ushort> CrossTile;
+        public static HashSet<ushort> CrossTile;//'Minecraft grass' style model
 
         public override void Load()
         {

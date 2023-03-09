@@ -15,7 +15,7 @@ namespace SuperUltraFishing
         public override void Load()
         {
             ContentHandler.Load();
-            //Model model = ContentHandler.GetModel("SuperUltraFishing/Models/20Dice");
+            Model fish = ContentHandler.GetModel("SuperUltraFishing/Models/FishBone");
 
             //string name = "FlatColor";
             //var screenRef = new Ref<Effect>(Assets.Request<Effect>("Effects/FlatColor", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value);

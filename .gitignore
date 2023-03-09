@@ -396,3 +396,10 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+Models/fishbone_spm.png
+Models/fishbone_nrm.png
+Models/fishbone_emm.png
+Models/fishbone_alb.png
+Models/FishBone.xnb
+Models/FishBone.fbx
+Models/bake_fishbone_g00_b00_f00.png

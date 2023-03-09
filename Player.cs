@@ -22,7 +22,7 @@ namespace SuperUltraFishing
 {
     internal class RobotPlayer : ModSystem
     {
-        public Vector3 Velocity = Vector3.Zero;//unused
+        public Vector3 Velocity = Vector3.Zero;
         public Vector3 Position = Vector3.Zero;
         public float Yaw = 0;
         public float Pitch = 0;

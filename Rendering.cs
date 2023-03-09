@@ -23,16 +23,61 @@ namespace SuperUltraFishing
 {
     internal class Rendering : ModSystem
     {
-        public RenderTarget2D WindowTarget;
-        public RenderTarget2D WaterTarget;
-        public BasicEffect BasicEffect;
-        public BasicEffect FlatColorEffect;
-        public AlphaTestEffect AlphaEffect;
-        public Effect WaterShimmerEffect;
-        public Effect WaterPostProcessEffect;
-        //public Effect FlatColorEffect;
+        private Matrix _projection;
+        public Matrix ProjectionMatrix {
+            get => _projection;
+            set
+            {
+                _projection = value;
+                BasicEffect.Projection = value;
+                FlatColorEffect.Projection = value;
+                AlphaEffect.Projection = value;
+            }
+        }
 
-        public Texture2D LargePerlin;
+        private Matrix _world;
+        public Matrix WorldMatrix { 
+            get => _world; 
+            set 
+            {
+                _world = value;
+                BasicEffect.World = value;
+                FlatColorEffect.World = value;
+                AlphaEffect.World = value;
+            } 
+        }
+
+        private Matrix _view;
+        public Matrix ViewMatrix
+        {
+            get => _view;
+            set
+            {
+                _view = value;
+                BasicEffect.View = value;
+                FlatColorEffect.View = value;
+                AlphaEffect.View = value;
+            }
+        }
+
+
+        private World world;
+        private RobotPlayer player;
+        private EntitySystem entitySystem;
+        private FishingUIWindow fishingUIWindow;
+
+
+        public RenderTarget2D WindowTarget;//Main drawing
+        public RenderTarget2D WaterTarget;//Target for  water distortion map
+
+        public BasicEffect BasicEffect;
+        public BasicEffect FlatColorEffect;//Blank colors for filling gaps
+        public AlphaTestEffect AlphaEffect;//Alpha sampling on transparent textures
+
+        public Effect WaterShimmerEffect;
+        public Effect WaterPostProcessEffect;//Distortion pass (pixel shader)
+
+        public Texture2D LargePerlin;//Perlin maps for water
         public Texture2D SmallPerlin;
 
         public Vector3 CameraPosition = Vector3.Zero;
@@ -42,38 +87,23 @@ namespace SuperUltraFishing
         //public List<VertexPositionColorTexture> TileMeshVertices = new();
         //public VertexBuffer VertBuffer;
 
-        public Dictionary<Texture2D, List<VertexPositionColorNormalTexture>> TextureVertices = new Dictionary<Texture2D, List<VertexPositionColorNormalTexture>>();
-        public Dictionary<Texture2D, VertexBuffer> TextureBuffers = new Dictionary<Texture2D, VertexBuffer>();
-        public Dictionary<Texture2D, Color> TextureColor = new Dictionary<Texture2D, Color>();
+        public Dictionary<Texture2D, List<VertexPositionColorNormalTexture>> TextureVertices = new();
+        public Dictionary<Texture2D, VertexBuffer> TextureBuffers = new();
+        public Dictionary<Texture2D, Color> TextureColor = new();
         //this could use a 1x1 texture instead, which would reduce the amount of SetVertexBuffer, and needing to change the rasterizer state
 
-        public List<VertexPositionColorTexture> WaterBufferList = new List<VertexPositionColorTexture>();
+        public List<VertexPositionColorTexture> WaterBufferList = new();
         public VertexBuffer WaterBuffer;
 
         public RasterizerState FlatColorRasterizer = new RasterizerState() { };
-        public RasterizerState TexturedRasterizer = new RasterizerState() { DepthBias = -0.0001f };
+        public RasterizerState TexturedRasterizer = new RasterizerState() { DepthBias = -0.0001f };//prevents Z fighting?
 
         public bool VertexBufferBuilt = false;
 
-        private World world;
-        private RobotPlayer player;
-        private FishingUIWindow fishingUIWindow;
-
-        public static Color[] colorLookup;
-
-        public HashSet<ushort> FourSidedTiles;
-
-        //public HashSet<ushort> FourSidedTilesBL;
-        public HashSet<ushort> CrossTile;
+        public static Color[] colorLookup;//color array for blocks
 
         public Color SkyColor = Color.Purple;
 
-        public override void PostAddRecipes()
-        {
-            world = GetInstance<World>();
-            player = GetInstance<RobotPlayer>();
-            fishingUIWindow = GetInstance<FishingUIWindow>();
-        }
         public override void Load()
         {
             FieldInfo fieldInfo = typeof(Terraria.Map.MapHelper).GetField("colorLookup", BindingFlags.NonPublic | BindingFlags.Static);
@@ -97,9 +127,6 @@ namespace SuperUltraFishing
                         LightingEnabled = true
                     };
 
-                    BasicEffect.Projection = Matrix.CreatePerspectiveFieldOfView((float)Math.PI / 2f, (float)Main.screenWidth / (float)Main.screenHeight, 1, 4000);
-                    BasicEffect.World = Matrix.CreateWorld(Vector3.Zero, Vector3.Forward, Vector3.Up) * Matrix.CreateScale(10);
-
                     FlatColorEffect = new BasicEffect(Main.graphics.GraphicsDevice)
                     {
                         VertexColorEnabled = true,
@@ -107,16 +134,16 @@ namespace SuperUltraFishing
                         //TextureEnabled = true,
                         //Texture = Terraria.GameContent.TextureAssets.BlackTile.Value
                     };
-                    FlatColorEffect.Projection = BasicEffect.Projection;
-                    FlatColorEffect.World = BasicEffect.World;
 
                     AlphaEffect = new AlphaTestEffect(Main.graphics.GraphicsDevice)
                     {
                         VertexColorEnabled = true,
                         Texture = Terraria.GameContent.TextureAssets.BlackTile.Value
                     };
-                    AlphaEffect.Projection = BasicEffect.Projection;
-                    AlphaEffect.World = BasicEffect.World;
+
+                    ProjectionMatrix = Matrix.CreatePerspectiveFieldOfView((float)Math.PI / 2f, (float)Main.screenWidth / (float)Main.screenHeight, 1, 4000);
+                    WorldMatrix = Matrix.CreateWorld(Vector3.Zero, Vector3.Forward, Vector3.Up) * Matrix.CreateScale(10);
+
 
                     WaterShimmerEffect = base.Mod.Assets.Request<Effect>("Effects/WaterShader", AssetRequestMode.ImmediateLoad).Value;
                     WaterPostProcessEffect = base.Mod.Assets.Request<Effect>("Effects/WaterPostProcess", AssetRequestMode.ImmediateLoad).Value;
@@ -126,6 +153,13 @@ namespace SuperUltraFishing
                     //FlatColorEffect.Parameters["Color"].SetValue(Color.Green.ToVector4());
                 }
             });
+        }
+        public override void PostAddRecipes()
+        {
+            world = GetInstance<World>();
+            player = GetInstance<RobotPlayer>();
+            entitySystem = GetInstance<EntitySystem>();
+            fishingUIWindow = GetInstance<FishingUIWindow>();
         }
 
         //draw vertex buffer to render target
@@ -221,10 +255,12 @@ namespace SuperUltraFishing
                     //Main.graphics.GraphicsDevice.DepthStencilState.DepthBufferFunction = CompareFunction.LessEqual;
                 }
 
+                entitySystem.DrawEntities();
+
                 //Main.graphics.GraphicsDevice.SetRenderTargets(WindowTarget, WaterTarget);
 
                 //todo: fix the textures not looping
-                WaterShimmerEffect.Parameters["WorldViewProjection"].SetValue((BasicEffect.World * BasicEffect.View) * BasicEffect.Projection);
+                WaterShimmerEffect.Parameters["WorldViewProjection"].SetValue((WorldMatrix * ViewMatrix) * ProjectionMatrix);
                 WaterShimmerEffect.Parameters["Offset"].SetValue(new Vector2(((float)Main.GameUpdateCount / 5000f) % 1));
                 WaterShimmerEffect.Parameters["Strength"].SetValue(0.010f);
 
@@ -516,6 +552,7 @@ namespace SuperUltraFishing
 
             var a = Main.treeBGSet2[0];
             var b = Main.snowBG;
+            var c = Main.snowMntBG;
             switch (Main.bgStyle)
             {
                 case SurfaceBackgroundID.Desert:
@@ -564,13 +601,32 @@ namespace SuperUltraFishing
                     break;
                 case SurfaceBackgroundID.Snow:
                     {
-                        if(Main.snowBG[2] == 39)
-                            AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 10, loopCount: 4, distance: 64f);
-                        else
-                            AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: -60, loopCount: 6, distance: 64f);
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[1], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 35, loopCount: 4, rotationOffset: MathF.Tau * 0.22f, distance: 100f);
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[0], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 50, rotationOffset: MathF.Tau * 0.166f, distance: 120f);
-                        SkyColor = new Color(85, 146, 168, 255);
+                        switch (WorldGen.snowBG)
+                        {
+                            case 0:
+                                {
+                                    //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 10, loopCount: 4, distance: 64f);
+                                    //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[1], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 35, loopCount: 4, rotationOffset: MathF.Tau * 0.22f, distance: 100f);
+                                    //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[0], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 50, rotationOffset: MathF.Tau * 0.166f, distance: 120f);
+                                    AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowMntBG[1], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 15, loopCount: 4, rotationOffset: MathF.Tau * 0.22f, distance: 100f);
+                                    AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowMntBG[0], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 30, rotationOffset: MathF.Tau * 0.166f, distance: 120f);
+                                    SkyColor = new Color(85, 146, 168, 255);
+                                }
+                                break;
+                            case 2:
+                                {//no snowBG for this style
+                                    AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowMntBG[1], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 15, loopCount: 4, rotationOffset: MathF.Tau * 0.22f, distance: 100f);
+                                    AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowMntBG[0], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 30, rotationOffset: MathF.Tau * 0.166f, distance: 120f);
+                                    SkyColor = new Color(85, 146, 168, 255);
+                                }
+                                break;
+                        }
+                        //if(Main.snowBG[2] == 39)
+                        //    AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 10, loopCount: 4, distance: 64f);
+                        //else
+                        //    AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[2], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: -60, loopCount: 6, distance: 64f);
+                        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[1], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 35, loopCount: 4, rotationOffset: MathF.Tau * 0.22f, distance: 100f);
+                        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.snowBG[0], AssetRequestMode.ImmediateLoad).Value, planeCount: 16, worldHeight: 50, rotationOffset: MathF.Tau * 0.166f, distance: 120f);
                     }
                     break;
                 case SurfaceBackgroundID.Jungle:
@@ -599,7 +655,7 @@ namespace SuperUltraFishing
                     break;
             }
         }
-        const float pixelRatioFix = MathF.PI * 3 * 0.1f;
+        //const float pixelRatioFix = MathF.PI * 3 * 0.1f;
         private void AddBackgroundRing(Texture2D texture, int planeCount = 16, int loopCount = 4, float distance = 64f, float worldHeight = 10, float rotationOffset = 0f, Vector3 offset = default, Color color = default, int frameCount = 1)
         {
             //distant = F
@@ -610,7 +666,7 @@ namespace SuperUltraFishing
             float planeWidth = MathF.Sqrt(
                 MathF.Pow(distance / MathF.Sin(planeAngle), 2) -
                 MathF.Pow(distance, 2)
-                ) * 1.988f;//d
+                ) * 1.99f;//d
 
             float frameWidth = (texture.Width / ((float)planeCount / loopCount));
             float scaleRatio = planeWidth / frameWidth;//used to scale the height based on the ratio between the new width and old width
