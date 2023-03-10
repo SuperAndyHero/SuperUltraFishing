@@ -17,6 +17,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI;
 using static Terraria.ModLoader.ModContent;
+using System.Configuration;
 
 namespace SuperUltraFishing
 {
@@ -24,33 +25,49 @@ namespace SuperUltraFishing
     {
         internal EntitySystem EntitySystem;
 
+        public ushort index;
         public Vector3 Velocity = Vector3.Zero;
         public Vector3 Position = Vector3.Zero;
         public float Yaw = 0;
         public float Pitch = 0;
+        public float Scale = 1f;
         public bool active = true;
-
         public Model Model { get; private set; }
 
         public Entity3D() 
         {
             EntitySystem = GetInstance<EntitySystem>();
+            Model = ContentHandler.GetAsset<Model>("SuperUltraFishing/Models/FishBone");
+            OnCreate();
         }
 
-        public virtual float MoveSpeed => 1f;
-        public virtual void AI() { }
+        public virtual void OnCreate() { }
 
+        //public virtual string DisplayName => "";
+        public virtual float MoveSpeed => 1f;
+        public virtual string ModelPath => "SuperUltraFishing/Models/20Dice";
+
+        //onetimecreate
         public void Update()
         {
             AI();
+            //Model.Root.Transform = Matrix.CreateTranslation(Position);
+            Animate();
         }
+        public virtual void AI() { }
+        public virtual void Animate() { }
+
 
         public void Draw()
         {
-            Model.Draw(EntitySystem.rendering.WorldMatrix, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
+            if(Model != null)
+            {
+                //Model.Meshes[0].
+                Matrix ScaleRotPos = Matrix.CreateScale(Scale) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
+                Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
+            }
             CustomDraw();
         }
-
         public virtual void CustomDraw() { }
     }
 
@@ -65,7 +82,7 @@ namespace SuperUltraFishing
 
         public override void Load()
         {
-            EntityArray = new Entity3D[MaxEntityCount];
+            ClearAllEntities();
         }
 
         public override void PostAddRecipes()
@@ -89,6 +106,33 @@ namespace SuperUltraFishing
             {
                 entity?.Draw();
             }
+        }
+
+        public void ClearAllEntities()
+        {
+            EntityArray = new Entity3D[MaxEntityCount];
+        }
+
+        public Entity3D SpawnEntity(Type type, Vector3 position)
+        {
+            if (type.IsSubclassOf(typeof(Entity3D)))
+            {
+                for (ushort i = 0; i < MaxEntityCount; i++)
+                {
+                    if (EntityArray[i] == null)
+                    {
+                        EntityArray[i] = (Entity3D)Activator.CreateInstance(type);
+                        EntityArray[i].index = i;
+                        EntityArray[i].Position = position;
+                        Main.NewText("Spawned entity: " + type.ToString());
+                        return EntityArray[i];
+                    }
+                }
+                Main.NewText("Entity Array Full");
+                return null;
+            }
+            Main.NewText("Type is not Entity3D");
+            return null;
         }
     }
 

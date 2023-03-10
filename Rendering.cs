@@ -191,7 +191,7 @@ namespace SuperUltraFishing
                 Main.graphics.GraphicsDevice.BlendState = BlendState.AlphaBlend;//needed or a similar issue as above happens
                 Main.graphics.GraphicsDevice.SamplerStates[0] = SamplerState.PointWrap;//keeps the quads pixel perfect, and allows the background ring to loop
 
-                BasicEffect.View = AlphaEffect.View = FlatColorEffect.View = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
+                ViewMatrix = Matrix.CreateLookAt(CameraPosition, CameraPosition + Vector3.Transform(Vector3.Forward, Matrix.CreateFromYawPitchRoll(CameraYaw, CameraPitch, 0)), Vector3.Up);
 
                 //todo: http://www.catalinzima.com/xna/tutorials/deferred-rendering-in-xna/point-lights/
 
@@ -557,9 +557,9 @@ namespace SuperUltraFishing
             {
                 case SurfaceBackgroundID.Desert:
                     {
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[2], AssetRequestMode.ImmediateLoad).Value, worldHeight: -20, loopCount: 4, distance: 58f);
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[1], AssetRequestMode.ImmediateLoad).Value, worldHeight: 32, loopCount: 2, distance: 64f, rotationOffset: (float)Math.Tau * 0.66f);
-                        AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[0], AssetRequestMode.ImmediateLoad).Value, worldHeight: 42, loopCount: 2, distance: 76f, rotationOffset: (float)Math.Tau * 0.166f, color: new Color(230, 230, 230, 200));
+                        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[2], AssetRequestMode.ImmediateLoad).Value, worldHeight: -20, loopCount: 4, distance: 58f);
+                        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[1], AssetRequestMode.ImmediateLoad).Value, worldHeight: 32, loopCount: 2, distance: 64f, rotationOffset: (float)Math.Tau * 0.66f);
+                        //AddBackgroundRing(ModContent.Request<Texture2D>("Terraria/Images/Background_" + Main.desertBG[0], AssetRequestMode.ImmediateLoad).Value, worldHeight: 42, loopCount: 2, distance: 76f, rotationOffset: (float)Math.Tau * 0.166f, color: new Color(230, 230, 230, 200));
                         SkyColor = new Color(145, 165, 245, 255);
                     }
                     break;

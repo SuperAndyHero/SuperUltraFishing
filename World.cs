@@ -18,6 +18,8 @@ namespace SuperUltraFishing
 {
     internal class World : ModSystem
     {
+        public EntitySystem entitySystem;
+
         public int AreaSizeX = 32;
         public int AreaSizeY = 32;
         public int AreaSizeZ = 32;
@@ -34,6 +36,11 @@ namespace SuperUltraFishing
 
         //public HashSet<ushort> FourSidedTilesBL;
         public static HashSet<ushort> CrossTile;//'Minecraft grass' style model
+
+        public override void PostAddRecipes()
+        {
+            entitySystem = GetInstance<EntitySystem>();
+        }
 
         public override void Load()
         {
@@ -632,9 +639,11 @@ namespace SuperUltraFishing
 
         public bool GenerateWorld(Point16 worldLocation)
         {
+            entitySystem.ClearAllEntities();
             Error = "";
             WorldGenerated = false;
             LastWorldLocation = worldLocation;
+
 
             Rectangle? worldrect = FindWorldRect(worldLocation);
 
@@ -651,6 +660,7 @@ namespace SuperUltraFishing
 
         public bool DebugGenerateWorld(Rectangle area)
         {
+            entitySystem.ClearAllEntities();
             Error = "";
             WorldGenerated = false;
             CaptureWorldArea(area);//temp name

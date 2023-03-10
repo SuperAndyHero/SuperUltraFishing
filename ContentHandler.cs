@@ -22,8 +22,7 @@ namespace SuperUltraFishing
 
         protected override Stream OpenStream(string assetName)
         {
-            byte[] buffer2 = ModContent.GetFileBytes(assetName);
-            return new MemoryStream(buffer2);
+            return new MemoryStream(ModContent.GetFileBytes(assetName));
         }
     }
 
@@ -63,14 +62,15 @@ namespace SuperUltraFishing
             modContentManager = null;
         }
 
-        public static async Task<T> GetAsset<T>(string path)
+        public static T GetAsset<T>(string path)
         {
-            T asset = default;
-
-            await Main.RunOnMainThread(() => { //handles graphics so this must be queued on the main thread
-                asset = modContentManager.Load<T>(path + ".xnb");
-            });
-            return asset;
+            if(AssetRepository.IsMainThread)
+                return modContentManager.Load<T>(path + ".xnb");
+            else
+                return Main.RunOnMainThread<T>(() =>
+                {
+                    return modContentManager.Load<T>(path + ".xnb");
+                }).Result;
         }
 
         //	public static Model GetModel(string path) =>
