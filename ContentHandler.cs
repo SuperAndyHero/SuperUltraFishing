@@ -73,15 +73,16 @@ namespace SuperUltraFishing
                 }).Result;
         }
 
-        //	public static Model GetModel(string path) =>
-        //		GetAsset<Model>(path);
+        public static Model GetModel(string path) =>
+            GetAsset<Model>(path);
 
-        //	public static BasicEffect GetMaterial(string path) =>
-        //		GetAsset<BasicEffect>(path);
+        public static BasicEffect GetMaterial(string path) =>
+            GetAsset<BasicEffect>(path);
 
-        //	//Called this to match `ModContent.GetModTexture(str path)`
-        //	public static Texture2D GetXnaTexture(string path) =>
-        //		GetAsset<Texture2D>(path);
-        //}
+        //Called this to match `ModContent.GetModTexture(str path)`
+        public static Texture2D GetXnaTexture(string path) =>
+            GetAsset<Texture2D>(path);
+
+
     }
 }

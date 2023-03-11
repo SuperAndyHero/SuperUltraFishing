@@ -18,6 +18,7 @@ using Terraria.ModLoader;
 using Terraria.UI;
 using static Terraria.ModLoader.ModContent;
 using System.Configuration;
+using ReLogic.Content;
 
 namespace SuperUltraFishing
 {
@@ -33,12 +34,26 @@ namespace SuperUltraFishing
         public float Scale = 1f;
         public bool active = true;
         public Model Model { get; private set; }
+        public Asset<Texture2D> Texture { get; private set; }
+        public Matrix[] BoneTransforms;
 
         public Entity3D() 
         {
             EntitySystem = GetInstance<EntitySystem>();
-            Model = ContentHandler.GetAsset<Model>("SuperUltraFishing/Models/FishBone");
+            Model = ContentHandler.GetAsset<Model>(ModelPath);
+            Texture = Request<Texture2D>(TexturePath);
+            BoneTransforms = Enumerable.Repeat(Matrix.Identity, Model.Bones.Count).ToArray();
+            SetEffect();
             OnCreate();
+        }
+
+        public virtual void SetEffect()
+        {
+            foreach (var mesh in Model.Meshes)
+                foreach (var meshpart in mesh.MeshParts)
+                {
+                    meshpart.Effect = EntitySystem.rendering.ModelEffect;//.Clone();//may want to clone this or have a instance per model
+                }
         }
 
         public virtual void OnCreate() { }
@@ -46,29 +61,33 @@ namespace SuperUltraFishing
         //public virtual string DisplayName => "";
         public virtual float MoveSpeed => 1f;
         public virtual string ModelPath => "SuperUltraFishing/Models/20Dice";
+        public virtual string TexturePath => null;
 
         //onetimecreate
         public void Update()
         {
             AI();
-            //Model.Root.Transform = Matrix.CreateTranslation(Position);
             Animate();
         }
         public virtual void AI() { }
         public virtual void Animate() { }
 
 
-        public void Draw()
+        public virtual void Draw()
         {
             if(Model != null)
             {
-                //Model.Meshes[0].
+                //this assumes the model has all parts set to the default effect, this may need to be changed to use a cached effect reference, or change the values for each mech part seperately
+                SkinnedEffect effect = EntitySystem.rendering.ModelEffect;
+                effect.Texture = Texture.Value;
+                effect.SetBoneTransforms(BoneTransforms);
+
                 Matrix ScaleRotPos = Matrix.CreateScale(Scale) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
                 Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
             }
-            CustomDraw();
+            PostDraw();
         }
-        public virtual void CustomDraw() { }
+        public virtual void PostDraw() { }
     }
 
     internal class EntitySystem : ModSystem

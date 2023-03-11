@@ -1,19 +1,30 @@
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SuperUltraFishing;
+using System;
 using Terraria.ModLoader;
 
 public class FishBone : Entity3D
 {
     public override string ModelPath => "SuperUltraFishing/Models/FishBone";
+    public override string TexturePath => "SuperUltraFishing/Models/fishbone_alb";
+    bool animate = false;
+    int offset = 0;
     public override void OnCreate()
     {
         Scale = 0.02f;
-        Model.Meshes[0].MeshParts[0].Effect = ModContent.GetInstance<Rendering>().BasicEffect.Clone();
-        ((BasicEffect)Model.Meshes[0].MeshParts[0].Effect).Texture = ModContent.Request<Texture2D>("SuperUltraFishing/Models/fishbone_alb", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value;
+        animate = false;
     }
     public override void Animate()
     {
-        Yaw += 0.01f;
+        //if (animate)
+        //{
+            offset++;
+            BoneTransforms[4] = Matrix.CreateFromYawPitchRoll(0, (float)Math.Sin((Terraria.Main.GameUpdateCount + offset) / 50f) / 10f, 0);
+            //Model.Bones[4].Transform = Matrix.CreateFromYawPitchRoll((float)Math.Sin(Terraria.Main.GameUpdateCount / 50f), 0, 0);
+        //}
+        if (animate)
+            Yaw += 0.01f;
     }
     public override void AI()
     {

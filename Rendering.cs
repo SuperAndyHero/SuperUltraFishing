@@ -29,9 +29,9 @@ namespace SuperUltraFishing
             set
             {
                 _projection = value;
-                BasicEffect.Projection = value;
+                TexturedEffect.Projection = value;
                 FlatColorEffect.Projection = value;
-                AlphaEffect.Projection = value;
+                AlphaCutEffect.Projection = value;
             }
         }
 
@@ -41,9 +41,9 @@ namespace SuperUltraFishing
             set 
             {
                 _world = value;
-                BasicEffect.World = value;
+                TexturedEffect.World = value;
                 FlatColorEffect.World = value;
-                AlphaEffect.World = value;
+                AlphaCutEffect.World = value;
             } 
         }
 
@@ -54,9 +54,9 @@ namespace SuperUltraFishing
             set
             {
                 _view = value;
-                BasicEffect.View = value;
+                TexturedEffect.View = value;
                 FlatColorEffect.View = value;
-                AlphaEffect.View = value;
+                AlphaCutEffect.View = value;
             }
         }
 
@@ -70,15 +70,20 @@ namespace SuperUltraFishing
         public RenderTarget2D WindowTarget;//Main drawing
         public RenderTarget2D WaterTarget;//Target for  water distortion map
 
-        public BasicEffect BasicEffect;
+
+        public BasicEffect TexturedEffect;
         public BasicEffect FlatColorEffect;//Blank colors for filling gaps
-        public AlphaTestEffect AlphaEffect;//Alpha sampling on transparent textures
+        public AlphaTestEffect AlphaCutEffect;//Alpha sampling on transparent textures
+
+        public SkinnedEffect ModelEffect;
 
         public Effect WaterShimmerEffect;
         public Effect WaterPostProcessEffect;//Distortion pass (pixel shader)
 
+
         public Texture2D LargePerlin;//Perlin maps for water
         public Texture2D SmallPerlin;
+
 
         public Vector3 CameraPosition = Vector3.Zero;
         public float CameraYaw = 0;
@@ -98,11 +103,11 @@ namespace SuperUltraFishing
         public RasterizerState FlatColorRasterizer = new RasterizerState() { };
         public RasterizerState TexturedRasterizer = new RasterizerState() { DepthBias = -0.0001f };//prevents Z fighting?
 
-        public bool VertexBufferBuilt = false;
-
         public static Color[] colorLookup;//color array for blocks
 
         public Color SkyColor = Color.Purple;
+
+        public bool VertexBufferBuilt = false;
 
         public override void Load()
         {
@@ -119,7 +124,7 @@ namespace SuperUltraFishing
                     WindowTarget = new RenderTarget2D(Main.graphics.GraphicsDevice, Main.screenWidth, Main.screenHeight, false, default, DepthFormat.Depth24Stencil8);
                     WaterTarget = new RenderTarget2D(Main.graphics.GraphicsDevice, Main.screenWidth, Main.screenHeight, false, SurfaceFormat.Rg32, DepthFormat.Depth24Stencil8);
 
-                    BasicEffect = new BasicEffect(Main.graphics.GraphicsDevice)
+                    TexturedEffect = new BasicEffect(Main.graphics.GraphicsDevice)
                     {
                         VertexColorEnabled = true,
                         TextureEnabled = true,
@@ -135,14 +140,39 @@ namespace SuperUltraFishing
                         //Texture = Terraria.GameContent.TextureAssets.BlackTile.Value
                     };
 
-                    AlphaEffect = new AlphaTestEffect(Main.graphics.GraphicsDevice)
+                    AlphaCutEffect = new AlphaTestEffect(Main.graphics.GraphicsDevice)
                     {
                         VertexColorEnabled = true,
                         Texture = Terraria.GameContent.TextureAssets.BlackTile.Value
                     };
 
+                    ModelEffect = new SkinnedEffect(Main.graphics.GraphicsDevice)
+                    {
+                        Texture = Terraria.GameContent.TextureAssets.BlackTile.Value,
+                    };
+                    ModelEffect.PreferPerPixelLighting = true;//can also be true for main shader, but not much would benefit
+                    //the model shader's matrix is set when it is drawn
+
+
+                    #region fog and light settings (final)
+                    ModelEffect.FogEnabled = TexturedEffect.FogEnabled = AlphaCutEffect.FogEnabled = FlatColorEffect.FogEnabled = false;
+                    //BasicEffect.FogEnabled = AlphaEffect.FogEnabled = FlatColorEffect.FogEnabled = true;
+                    ModelEffect.FogColor = TexturedEffect.FogColor = AlphaCutEffect.FogColor = FlatColorEffect.FogColor = new Vector3(0.12f, 0.12f, 0.35f);
+                    ModelEffect.FogStart = TexturedEffect.FogStart = AlphaCutEffect.FogStart = FlatColorEffect.FogStart = 10;
+                    ModelEffect.FogEnd = TexturedEffect.FogEnd = AlphaCutEffect.FogEnd = FlatColorEffect.FogEnd = 250;
+
+                    ModelEffect.AmbientLightColor = TexturedEffect.AmbientLightColor = new Vector3(0.3f, 0.3f, 0.3f);
+
+                    ModelEffect.DirectionalLight0.Enabled = TexturedEffect.DirectionalLight0.Enabled = FlatColorEffect.DirectionalLight0.Enabled = true;
+                    ModelEffect.DirectionalLight0.SpecularColor = TexturedEffect.DirectionalLight0.SpecularColor = FlatColorEffect.DirectionalLight0.SpecularColor = Color.Gray.ToVector3();
+                    ModelEffect.DirectionalLight0.DiffuseColor = TexturedEffect.DirectionalLight0.DiffuseColor = AlphaCutEffect.DiffuseColor = FlatColorEffect.DirectionalLight0.DiffuseColor = Color.Gray.ToVector3();
+                    ModelEffect.DirectionalLight0.Direction = TexturedEffect.DirectionalLight0.Direction = FlatColorEffect.DirectionalLight0.Direction = Vector3.Normalize(Vector3.Down + Vector3.Left);
+                    #endregion
+
+
                     ProjectionMatrix = Matrix.CreatePerspectiveFieldOfView((float)Math.PI / 2f, (float)Main.screenWidth / (float)Main.screenHeight, 1, 4000);
                     WorldMatrix = Matrix.CreateWorld(Vector3.Zero, Vector3.Forward, Vector3.Up) * Matrix.CreateScale(10);
+
 
 
                     WaterShimmerEffect = base.Mod.Assets.Request<Effect>("Effects/WaterShader", AssetRequestMode.ImmediateLoad).Value;
@@ -154,6 +184,7 @@ namespace SuperUltraFishing
                 }
             });
         }
+
         public override void PostAddRecipes()
         {
             world = GetInstance<World>();
@@ -195,18 +226,20 @@ namespace SuperUltraFishing
 
                 //todo: http://www.catalinzima.com/xna/tutorials/deferred-rendering-in-xna/point-lights/
 
-                BasicEffect.FogEnabled = AlphaEffect.FogEnabled = FlatColorEffect.FogEnabled = false;
-                //BasicEffect.FogEnabled = AlphaEffect.FogEnabled = FlatColorEffect.FogEnabled = true;
-                BasicEffect.FogColor = AlphaEffect.FogColor = FlatColorEffect.FogColor = new Vector3(0.12f, 0.12f, 0.35f);
-                BasicEffect.FogStart = AlphaEffect.FogStart = FlatColorEffect.FogStart = 10;
-                BasicEffect.FogEnd = AlphaEffect.FogEnd = FlatColorEffect.FogEnd = 250;
+                #region light and fog settings (for adjustments)
+                //ModelEffect.FogEnabled = TexturedEffect.FogEnabled = AlphaCutEffect.FogEnabled = FlatColorEffect.FogEnabled = false;
+                ////BasicEffect.FogEnabled = AlphaEffect.FogEnabled = FlatColorEffect.FogEnabled = true;
+                //ModelEffect.FogColor = TexturedEffect.FogColor = AlphaCutEffect.FogColor = FlatColorEffect.FogColor = new Vector3(0.12f, 0.12f, 0.35f);
+                //ModelEffect.FogStart = TexturedEffect.FogStart = AlphaCutEffect.FogStart = FlatColorEffect.FogStart = 10;
+                //ModelEffect.FogEnd = TexturedEffect.FogEnd = AlphaCutEffect.FogEnd = FlatColorEffect.FogEnd = 250;
 
-                BasicEffect.AmbientLightColor = new Vector3(0.3f, 0.3f, 0.3f);
+                //ModelEffect.AmbientLightColor = TexturedEffect.AmbientLightColor = new Vector3(0.3f, 0.3f, 0.3f);
 
-                BasicEffect.DirectionalLight0.Enabled = FlatColorEffect.DirectionalLight0.Enabled = true;
-                BasicEffect.DirectionalLight0.SpecularColor = FlatColorEffect.DirectionalLight0.SpecularColor = Color.Gray.ToVector3();
-                BasicEffect.DirectionalLight0.DiffuseColor = AlphaEffect.DiffuseColor = FlatColorEffect.DirectionalLight0.DiffuseColor = Color.Gray.ToVector3();
-                BasicEffect.DirectionalLight0.Direction = FlatColorEffect.DirectionalLight0.Direction = Vector3.Normalize(Vector3.Down + Vector3.Left);
+                //ModelEffect.DirectionalLight0.Enabled = TexturedEffect.DirectionalLight0.Enabled = FlatColorEffect.DirectionalLight0.Enabled = true;
+                //ModelEffect.DirectionalLight0.SpecularColor = TexturedEffect.DirectionalLight0.SpecularColor = FlatColorEffect.DirectionalLight0.SpecularColor = Color.Gray.ToVector3();
+                //ModelEffect.DirectionalLight0.DiffuseColor = TexturedEffect.DirectionalLight0.DiffuseColor = AlphaCutEffect.DiffuseColor = FlatColorEffect.DirectionalLight0.DiffuseColor = Color.Gray.ToVector3();
+                //ModelEffect.DirectionalLight0.Direction = TexturedEffect.DirectionalLight0.Direction = FlatColorEffect.DirectionalLight0.Direction = Vector3.Normalize(Vector3.Down + Vector3.Left);
+                #endregion
 
                 foreach (KeyValuePair<Texture2D, VertexBuffer> pair in TextureBuffers)
                 {
@@ -220,15 +253,15 @@ namespace SuperUltraFishing
 
                     if (flatColor.A != 0)
                     {
-                        FlatColorEffect.AmbientLightColor = TextureColor[pair.Key].ToVector3() * BasicEffect.AmbientLightColor;
+                        FlatColorEffect.AmbientLightColor = TextureColor[pair.Key].ToVector3() * TexturedEffect.AmbientLightColor;
                         FlatColorEffect.CurrentTechnique.Passes[0].Apply();
                         Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
 
                         //var verArray = TextureVertices[pair.Key].ToArray();
                         //Main.graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColorTexture>(PrimitiveType.TriangleList, verArray, 0, pair.Value.VertexCount / 3);
 
-                        BasicEffect.Texture = pair.Key;
-                        BasicEffect.CurrentTechnique.Passes[0].Apply();
+                        TexturedEffect.Texture = pair.Key;
+                        TexturedEffect.CurrentTechnique.Passes[0].Apply();
                         Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
                         //Main.graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColorTexture>(PrimitiveType.TriangleList, verArray, 0, pair.Value.VertexCount / 3);
                     }
@@ -236,10 +269,10 @@ namespace SuperUltraFishing
                     {
                         //Main.graphics.GraphicsDevice.DepthStencilState.DepthBufferWriteEnable = false;
 
-                        AlphaEffect.Texture = pair.Key;
-                        AlphaEffect.CurrentTechnique.Passes[0].Apply();
-                        AlphaEffect.AlphaFunction = CompareFunction.GreaterEqual;
-                        AlphaEffect.ReferenceAlpha = 200;
+                        AlphaCutEffect.Texture = pair.Key;
+                        AlphaCutEffect.CurrentTechnique.Passes[0].Apply();
+                        AlphaCutEffect.AlphaFunction = CompareFunction.GreaterEqual;
+                        AlphaCutEffect.ReferenceAlpha = 200;
                         Main.graphics.GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, pair.Value.VertexCount / 3);
 
 
