@@ -36,6 +36,7 @@ namespace SuperUltraFishing
         public Model Model { get; private set; }
         public Asset<Texture2D> Texture { get; private set; }
         public Matrix[] BoneTransforms;
+        public BoundingSphere BoundingSphere;//may need to be a array
 
         public Entity3D() 
         {
@@ -43,6 +44,7 @@ namespace SuperUltraFishing
             Model = ContentHandler.GetAsset<Model>(ModelPath);
             Texture = Request<Texture2D>(TexturePath);
             BoneTransforms = Enumerable.Repeat(Matrix.Identity, Model.Bones.Count).ToArray();
+            BoundingSphere = Model.Meshes[0].BoundingSphere;
             SetEffect();
             OnCreate();
         }
@@ -66,9 +68,22 @@ namespace SuperUltraFishing
         //onetimecreate
         public void Update()
         {
+            PreCollision();
+
+            Position += Velocity;
+
+            Matrix SphereTransform = Matrix.CreateScale(Scale) * Matrix.CreateTranslation(Position);//may need rotation
+            BoundingSphere = Model.Meshes[0].BoundingSphere.Transform(SphereTransform);
+
+            //if (BoundingSphere.Contains()
+            //{
+            //    BoundingSphere.
+            //}
+
             AI();
             Animate();
         }
+        public virtual void PreCollision() { }
         public virtual void AI() { }
         public virtual void Animate() { }
 
@@ -84,7 +99,14 @@ namespace SuperUltraFishing
 
                 Matrix ScaleRotPos = Matrix.CreateScale(Scale) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
                 Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
+
+                if(true)//debug
+                {
+                    Matrix ScalePosBounds = Matrix.CreateScale(BoundingSphere.Radius) * Matrix.CreateTranslation(BoundingSphere.Center);
+                    EntitySystem.rendering.DebugSphere.Draw(EntitySystem.rendering.WorldMatrix * ScalePosBounds, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
+                }
             }
+
             PostDraw();
         }
         public virtual void PostDraw() { }

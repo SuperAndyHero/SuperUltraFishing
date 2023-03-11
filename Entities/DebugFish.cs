@@ -12,8 +12,8 @@ public class FishBone : Entity3D
     int offset = 0;
     public override void OnCreate()
     {
-        Scale = 0.02f;
-        animate = false;
+        Scale = 0.015f;
+        animate = true;
     }
     public override void Animate()
     {
@@ -26,8 +26,16 @@ public class FishBone : Entity3D
         if (animate)
             Yaw += 0.01f;
     }
+    public override void PreCollision()
+    {
+        const float SinkSpeed = 0.001f;
+        //if (Velocity.Y < 0.01f)
+        //   Velocity.Y -= SinkSpeed;
+    }
     public override void AI()
     {
+        const float SlowDown = 0.942f;
 
+        Velocity *= SlowDown;
     }
 }

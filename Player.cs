@@ -33,6 +33,8 @@ namespace SuperUltraFishing
         private Rendering rendering;
         private FishingUIWindow fishingUIWindow;
 
+        public BoundingBox debugBoundingBox;
+
         public override void PostAddRecipes()
         {
             world = GetInstance<World>();
@@ -42,6 +44,7 @@ namespace SuperUltraFishing
 
         public void Reset()
         {
+            debugBoundingBox = new BoundingBox();
             Position = new Vector3(world.AreaSizeX, world.AreaSizeY, world.AreaSizeZ) * 4;
             Velocity = Vector3.Zero;
             Yaw = 0;
@@ -81,14 +84,23 @@ namespace SuperUltraFishing
                 if (Main.keyState.IsKeyDown(Keys.D))
                     newDir.X += moveAmount;
 
+
+                //move to proper update method
                 Velocity += Vector3.Transform(newDir, Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0));
 
+                const float SinkSpeed = 0.001f;
+                const float SlowDown = 0.942f;
+
                 //gravity
-                if(!fishingUIWindow.DebugMode && Velocity.Y < 0.01f)
-                    Velocity.Y -= 0.001f;
+                if (!fishingUIWindow.DebugMode && Velocity.Y < 0.01f)
+                    Velocity.Y -= SinkSpeed;
 
                 Position += Velocity;
-                Velocity *= fishingUIWindow.DebugMode? 0 : 0.942f;
+
+                int debugBoxsize = 10;
+                debugBoundingBox = new BoundingBox(Position + new Vector3(debugBoxsize), Position - new Vector3(debugBoxsize));
+
+                Velocity *= fishingUIWindow.DebugMode? 0 : SlowDown;
 
                 //Main.NewText(Pitch);
             }

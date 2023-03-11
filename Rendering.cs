@@ -109,6 +109,8 @@ namespace SuperUltraFishing
 
         public bool VertexBufferBuilt = false;
 
+        public Model DebugSphere;
+
         public override void Load()
         {
             FieldInfo fieldInfo = typeof(Terraria.Map.MapHelper).GetField("colorLookup", BindingFlags.NonPublic | BindingFlags.Static);
@@ -181,6 +183,14 @@ namespace SuperUltraFishing
                     //FlatColorEffect.Parameters["World"].SetValue(BasicEffect.World);
                     //FlatColorEffect.Parameters["Projection"].SetValue(BasicEffect.Projection);
                     //FlatColorEffect.Parameters["Color"].SetValue(Color.Green.ToVector4());
+
+                    DebugSphere = ContentHandler.GetModel("SuperUltraFishing/Models/BoundingSphere3");
+                    var sphereeffect = ((BasicEffect)DebugSphere.Meshes[0].Effects[0]);
+                    sphereeffect.EnableDefaultLighting();
+                    sphereeffect.AmbientLightColor = Color.LightSeaGreen.ToVector3();
+                    sphereeffect.Alpha = 0.3f;
+                    sphereeffect.LightingEnabled = true;
+                    sphereeffect.PreferPerPixelLighting = true;
                 }
             });
         }
