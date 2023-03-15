@@ -68,17 +68,36 @@ namespace SuperUltraFishing
         //onetimecreate
         public void Update()
         {
+            Velocity = Vector3.One * (float)Math.Sin((Main.GameUpdateCount) / 25f) * 0.1f;
             PreCollision();
 
             Position += Velocity;
 
+            //sets bounding sphere to position
             Matrix SphereTransform = Matrix.CreateScale(Scale) * Matrix.CreateTranslation(Position);//may need rotation
             BoundingSphere = Model.Meshes[0].BoundingSphere.Transform(SphereTransform);
 
-            //if (BoundingSphere.Contains()
-            //{
-            //    BoundingSphere.
-            //}
+            if (BoundingSphere.Intersects(EntitySystem.player.debugBoundingSphere))
+            {
+                //buggy collision solving
+                //Main.NewText("Colliding");
+                Vector3 vector = Vector3.Normalize(BoundingSphere.Center - EntitySystem.player.Position);
+
+                float playerVelLength = EntitySystem.player.Velocity.Length();
+                float velLength = Velocity.Length();
+
+                //float ratio = playerVelLength == 0 ? 1 : velLength == 0 ? 1 : playerVelLength / velLength;
+                //float ratio2 = playerVelLength == 0 ? 1 : velLength == 0 ? 1 : velLength / playerVelLength;
+
+                //Position += (vector * EntitySystem.player.Velocity.Length() * 1f);// * 2;
+                //EntitySystem.player.Position -= (vector * Velocity.Length() * 1f);// * 2;
+
+                Velocity += (vector * EntitySystem.player.Velocity.Length() * 0.5f);// * 2;
+                EntitySystem.player.Velocity -= (vector * Velocity.Length() * 0.5f);// * 2;
+
+                //Velocity /= ratio2;
+                //EntitySystem.player.Velocity /= ratio;
+            }
 
             AI();
             Animate();

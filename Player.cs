@@ -33,7 +33,7 @@ namespace SuperUltraFishing
         private Rendering rendering;
         private FishingUIWindow fishingUIWindow;
 
-        public BoundingBox debugBoundingBox;
+        public BoundingSphere debugBoundingSphere;
 
         public override void PostAddRecipes()
         {
@@ -44,7 +44,7 @@ namespace SuperUltraFishing
 
         public void Reset()
         {
-            debugBoundingBox = new BoundingBox();
+            debugBoundingSphere = new BoundingSphere();
             Position = new Vector3(world.AreaSizeX, world.AreaSizeY, world.AreaSizeZ) * 4;
             Velocity = Vector3.Zero;
             Yaw = 0;
@@ -98,7 +98,8 @@ namespace SuperUltraFishing
                 Position += Velocity;
 
                 int debugBoxsize = 10;
-                debugBoundingBox = new BoundingBox(Position + new Vector3(debugBoxsize), Position - new Vector3(debugBoxsize));
+                //sets bounding box to position
+                debugBoundingSphere = new BoundingSphere(Position, debugBoxsize);
 
                 Velocity *= fishingUIWindow.DebugMode? 0 : SlowDown;
 
