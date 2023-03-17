@@ -146,6 +146,20 @@ namespace SuperUltraFishing
             AreaArray[x, y, z].Active = true;
         }
 
+        public bool ValidTilePos(int x, int y, int z)
+        {
+            return 
+                x >= 0 && x < AreaSizeX &&
+                y >= 0 && y < AreaSizeY &&
+                z >= 0 && z < AreaSizeZ;
+        }
+
+        public int TempCollisionType(int x, int y, int z)
+        {
+            //temp solution until a proper collision type is implemented
+            return AreaArray[x, y, z].Active ? 1 : 0;
+        }
+
         //unused and imcomplete
         public void RemoveWorld()//unload world
         {

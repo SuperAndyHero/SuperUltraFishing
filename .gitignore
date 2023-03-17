@@ -403,3 +403,12 @@ Models/fishbone_alb.png
 Models/FishBone.xnb
 Models/FishBone.fbx
 Models/bake_fishbone_g00_b00_f00.png
+Models/EasyXnb/EasyXnb.exe
+Models/EasyXnb/EasyXnb.exe.config
+Models/EasyXnb/Microsoft.Xna.Framework.Content.Pipeline.dll
+Models/EasyXnb/Microsoft.Xna.Framework.Content.Pipeline.EffectImporter.dll
+Models/EasyXnb/Microsoft.Xna.Framework.Content.Pipeline.FBXImporter.dll
+Models/EasyXnb/Microsoft.Xna.Framework.Content.Pipeline.TextureImporter.dll
+Models/EasyXnb/Microsoft.Xna.Framework.dll
+Models/EasyXnb/Microsoft.Xna.Framework.Game.dll
+Models/EasyXnb/Microsoft.Xna.Framework.Graphics.dll

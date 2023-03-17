@@ -17,6 +17,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI;
 using static Terraria.ModLoader.ModContent;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SuperUltraFishing
 {
@@ -104,6 +105,32 @@ namespace SuperUltraFishing
                 Velocity *= fishingUIWindow.DebugMode? 0 : SlowDown;
 
                 //Main.NewText(Pitch);
+            }
+        }
+
+        public void DrawPlayer()
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        int tilePosX = (int)((debugBoundingSphere.Center.X / 10f) - 0.5f) + i;
+                        int tilePosY = (int)((debugBoundingSphere.Center.Y / 10f) - 0.5f) + j;
+                        int tilePosZ = (int)((debugBoundingSphere.Center.Z / 10f) - 0.5f) + k;
+
+                        if (world.ValidTilePos(tilePosX, tilePosY, tilePosZ) && world.TempCollisionType(tilePosX, tilePosY, tilePosZ) == 1)
+                        {
+                            Matrix ScalePosBounds = Matrix.CreateScale(1.001f) * Matrix.CreateTranslation(
+                                    new Vector3(
+                                    tilePosX * 10,
+                                    tilePosY * 10,
+                                    tilePosZ * 10));
+                            rendering.DebugCube.Draw(rendering.WorldMatrix * ScalePosBounds, rendering.ViewMatrix, rendering.ProjectionMatrix);
+                        }
+                    }
+                }
             }
         }
     }

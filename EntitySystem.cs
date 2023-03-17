@@ -68,7 +68,7 @@ namespace SuperUltraFishing
         //onetimecreate
         public void Update()
         {
-            Velocity = Vector3.One * (float)Math.Sin((Main.GameUpdateCount) / 25f) * 0.1f;
+            //Velocity = Vector3.One * (float)Math.Sin((Main.GameUpdateCount) / 25f) * 0.1f;
             PreCollision();
 
             Position += Velocity;
@@ -83,8 +83,8 @@ namespace SuperUltraFishing
                 //Main.NewText("Colliding");
                 Vector3 vector = Vector3.Normalize(BoundingSphere.Center - EntitySystem.player.Position);
 
-                float playerVelLength = EntitySystem.player.Velocity.Length();
-                float velLength = Velocity.Length();
+                //float playerVelLength = EntitySystem.player.Velocity.Length();
+                //float velLength = Velocity.Length();
 
                 //float ratio = playerVelLength == 0 ? 1 : velLength == 0 ? 1 : playerVelLength / velLength;
                 //float ratio2 = playerVelLength == 0 ? 1 : velLength == 0 ? 1 : velLength / playerVelLength;
@@ -109,7 +109,30 @@ namespace SuperUltraFishing
 
         public virtual void Draw()
         {
-            if(Model != null)
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        int tilePosX = (int)((BoundingSphere.Center.X / 10f) - 0.5f) + i;
+                        int tilePosY = (int)((BoundingSphere.Center.Y / 10f) - 0.5f) + j;
+                        int tilePosZ = (int)((BoundingSphere.Center.Z / 10f) - 0.5f) + k;
+
+                        if (EntitySystem.world.ValidTilePos(tilePosX, tilePosY, tilePosZ) && EntitySystem.world.TempCollisionType(tilePosX, tilePosY, tilePosZ) == 1)
+                        {
+                            Matrix ScalePosBounds = Matrix.CreateScale(1.001f) * Matrix.CreateTranslation(
+                                    new Vector3(
+                                    tilePosX * 10,
+                                    tilePosY * 10,
+                                    tilePosZ * 10));
+                            EntitySystem.rendering.DebugCube.Draw(EntitySystem.rendering.WorldMatrix * ScalePosBounds, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
+                        }
+                    }
+                }
+            }
+
+            if (Model != null)
             {
                 //this assumes the model has all parts set to the default effect, this may need to be changed to use a cached effect reference, or change the values for each mech part seperately
                 SkinnedEffect effect = EntitySystem.rendering.ModelEffect;

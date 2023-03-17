@@ -110,6 +110,7 @@ namespace SuperUltraFishing
         public bool VertexBufferBuilt = false;
 
         public Model DebugSphere;
+        public Model DebugCube;
 
         public override void Load()
         {
@@ -185,12 +186,21 @@ namespace SuperUltraFishing
                     //FlatColorEffect.Parameters["Color"].SetValue(Color.Green.ToVector4());
 
                     DebugSphere = ContentHandler.GetModel("SuperUltraFishing/Models/BoundingSphere3");
+
                     var sphereeffect = ((BasicEffect)DebugSphere.Meshes[0].Effects[0]);
                     sphereeffect.EnableDefaultLighting();
                     sphereeffect.AmbientLightColor = Color.LightSeaGreen.ToVector3();
                     sphereeffect.Alpha = 0.3f;
                     sphereeffect.LightingEnabled = true;
                     sphereeffect.PreferPerPixelLighting = true;
+
+                    DebugCube = ContentHandler.GetModel("SuperUltraFishing/Models/Cube");
+                    var cubeeffect = ((BasicEffect)DebugCube.Meshes[0].Effects[0]);
+                    cubeeffect.EnableDefaultLighting();
+                    cubeeffect.AmbientLightColor = Color.LightSkyBlue.ToVector3();
+                    cubeeffect.Alpha = 0.3f;
+                    cubeeffect.LightingEnabled = true;
+                    cubeeffect.PreferPerPixelLighting = true;
                 }
             });
         }
@@ -299,6 +309,7 @@ namespace SuperUltraFishing
                 }
 
                 entitySystem.DrawEntities();
+                player.DrawPlayer();
 
                 //Main.graphics.GraphicsDevice.SetRenderTargets(WindowTarget, WaterTarget);
 
