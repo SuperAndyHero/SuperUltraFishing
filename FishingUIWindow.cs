@@ -21,7 +21,7 @@ namespace SuperUltraFishing
 {
     internal class FishingUIWindow : ModSystem
     {
-        public bool DebugMode = false;
+        public bool DebugMode = true;
         public bool WindowActive = false;
 
         private World world;

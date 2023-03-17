@@ -77,11 +77,11 @@ namespace SuperUltraFishing
             Matrix SphereTransform = Matrix.CreateScale(Scale) * Matrix.CreateTranslation(Position);//may need rotation
             BoundingSphere = Model.Meshes[0].BoundingSphere.Transform(SphereTransform);
 
-            if (BoundingSphere.Intersects(EntitySystem.player.debugBoundingSphere))
+            if (BoundingSphere.Intersects(EntitySystem.player.BoundingSphere))
             {
                 //buggy collision solving
                 //Main.NewText("Colliding");
-                Vector3 vector = Vector3.Normalize(BoundingSphere.Center - EntitySystem.player.Position);
+                Vector3 dirVector = Vector3.Normalize(BoundingSphere.Center - EntitySystem.player.BoundingSphere.Center);
 
                 //float playerVelLength = EntitySystem.player.Velocity.Length();
                 //float velLength = Velocity.Length();
@@ -92,8 +92,8 @@ namespace SuperUltraFishing
                 //Position += (vector * EntitySystem.player.Velocity.Length() * 1f);// * 2;
                 //EntitySystem.player.Position -= (vector * Velocity.Length() * 1f);// * 2;
 
-                Velocity += (vector * EntitySystem.player.Velocity.Length() * 0.5f);// * 2;
-                EntitySystem.player.Velocity -= (vector * Velocity.Length() * 0.5f);// * 2;
+                Velocity += (dirVector * EntitySystem.player.Velocity.Length() * 0.5f);// * 2;
+                EntitySystem.player.Velocity -= (dirVector * Velocity.Length() * 0.5f);// * 2;
 
                 //Velocity /= ratio2;
                 //EntitySystem.player.Velocity /= ratio;
