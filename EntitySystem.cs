@@ -19,6 +19,13 @@ using Terraria.UI;
 using static Terraria.ModLoader.ModContent;
 using System.Configuration;
 using ReLogic.Content;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Input.Touch;
+using Microsoft.Xna.Framework.Media;
+using Microsoft.Xna.Framework.Design;
 
 namespace SuperUltraFishing
 {
@@ -69,14 +76,16 @@ namespace SuperUltraFishing
         public void Update()
         {
             //Velocity = Vector3.One * (float)Math.Sin((Main.GameUpdateCount) / 25f) * 0.1f;
-            PreCollision();
+            PreUpdate();
 
+            //might be worth optimizing using Vector3.Add(ref pos, ref vel, out pos)
             Position += Velocity;
 
             //sets bounding sphere to position
             Matrix SphereTransform = Matrix.CreateScale(Scale) * Matrix.CreateTranslation(Position);//may need rotation
             BoundingSphere = Model.Meshes[0].BoundingSphere.Transform(SphereTransform);
 
+            //collision
             if (BoundingSphere.Intersects(EntitySystem.player.BoundingSphere))
             {
                 //buggy collision solving
@@ -102,7 +111,7 @@ namespace SuperUltraFishing
             AI();
             Animate();
         }
-        public virtual void PreCollision() { }
+        public virtual void PreUpdate() { }
         public virtual void AI() { }
         public virtual void Animate() { }
 

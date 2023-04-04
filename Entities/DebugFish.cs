@@ -26,7 +26,7 @@ public class FishBone : Entity3D
         if (animate)
             Yaw += 0.01f;
     }
-    public override void PreCollision()
+    public override void PreUpdate()
     {
         const float SinkSpeed = 0.001f;
         //if (Velocity.Y < 0.01f)
@@ -34,6 +34,7 @@ public class FishBone : Entity3D
     }
     public override void AI()
     {
+        //make this built into entities
         const float SlowDown = 0.942f;
 
         Velocity *= SlowDown;
