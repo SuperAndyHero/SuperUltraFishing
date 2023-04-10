@@ -130,13 +130,22 @@ namespace SuperUltraFishing
 
         public void TileCollisions()
         {
-            CollideWithTile(0, 1, 1);
-            CollideWithTile(2, 1, 1);
-            CollideWithTile(1, 0, 1);
-            CollideWithTile(1, 2, 1);
-            CollideWithTile(1, 1, 0);
-            CollideWithTile(1, 1, 2);
+            //CollideWithTile(1, 1, 1);
+            for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; j++)
+                    for (int k = 0; k < 3; k++)
+                        CollideWithTile(i, j, k);
+
+            //CollideWithTile(0, 1, 1);
+            //CollideWithTile(2, 1, 1);
+            //CollideWithTile(1, 0, 1);//down
+            //CollideWithTile(1, 2, 1);//up
+            //CollideWithTile(1, 1, 0);
+            //CollideWithTile(1, 1, 2);
+            Position += TotalDir;
+            TotalDir = Vector3.Zero;
         }
+        public Vector3 TotalDir = Vector3.Zero;
         public void CollideWithTile(int i, int j, int k)
         {
             int tilePosX = (int)((BoundingSphere.Center.X / 10f) - 0.5f) + i;
@@ -155,15 +164,26 @@ namespace SuperUltraFishing
                         (tilePosY + 0.5f),
                         (tilePosZ + 0.5f)) * 10);
 
+                //if (BoundingSphere.Intersects(tileBox))
+                //{
+                //    Main.NewText("Contains");
+                //}
+                //else if (tileBox.Contains(BoundingSphere.Center) == ContainmentType.Intersects)
+                //{
+                //    Main.NewText("Itersect", Color.IndianRed);
+                //}
+
+                //clips into corners because block isnt checked
                 if (BoundingSphere.Intersects(tileBox))
                 {
+                    Main.NewText("Contains");
                     Vector3 pointonbox = ClosestPointOnBox(Position, tileBox);
                     Vector3 dir = (Position - pointonbox);
                     Vector3 dirOpposite = Vector3.Normalize(dir) * BoundingSphere.Radius;
                     //Main.NewText(dir);
-                    Position += dirOpposite - dir;
+                    TotalDir += dirOpposite - dir;
 
-                    Velocity *= 0.75f;//may need to be changed
+                    Velocity *= 1f;// 0.75f;//may need to be changed
                 }
             }
         }
@@ -177,29 +197,32 @@ namespace SuperUltraFishing
 
         public void DrawPlayer()
         {
-
-            //collision draw
             for (int i = 0; i < 3; i++)
-            {
                 for (int j = 0; j < 3; j++)
-                {
                     for (int k = 0; k < 3; k++)
-                    {
-                        int tilePosX = (int)((BoundingSphere.Center.X / 10f) - 0.5f) + i;
-                        int tilePosY = (int)((BoundingSphere.Center.Y / 10f) - 0.5f) + j;
-                        int tilePosZ = (int)((BoundingSphere.Center.Z / 10f) - 0.5f) + k;
+                        DrawDebugTileBox(i, j, k);
+            //DrawDebugTileBox(0, 1, 1);
+            //DrawDebugTileBox(2, 1, 1);
+            //DrawDebugTileBox(1, 0, 1);
+            //DrawDebugTileBox(1, 2, 1);
+            //DrawDebugTileBox(1, 1, 0);
+            //DrawDebugTileBox(1, 1, 2);
+        }
 
-                        if (world.ValidTilePos(tilePosX, tilePosY, tilePosZ) && world.TempCollisionType(tilePosX, tilePosY, tilePosZ) == 1)
-                        {
-                            Matrix ScalePosBounds = Matrix.CreateScale(1.001f) * Matrix.CreateTranslation(
-                                    new Vector3(
-                                    tilePosX * 10,
-                                    tilePosY * 10,
-                                    tilePosZ * 10));
-                            rendering.DebugCube.Draw(rendering.WorldMatrix * ScalePosBounds, rendering.ViewMatrix, rendering.ProjectionMatrix);
-                        }
-                    }
-                }
+        public void DrawDebugTileBox(int i, int j, int k)
+        {
+            int tilePosX = (int)((BoundingSphere.Center.X / 10f) - 0.5f) + i;
+            int tilePosY = (int)((BoundingSphere.Center.Y / 10f) - 0.5f) + j;
+            int tilePosZ = (int)((BoundingSphere.Center.Z / 10f) - 0.5f) + k;
+
+            if (world.ValidTilePos(tilePosX, tilePosY, tilePosZ) && world.TempCollisionType(tilePosX, tilePosY, tilePosZ) == 1)
+            {
+                Matrix ScalePosBounds = Matrix.CreateScale(1.001f) * Matrix.CreateTranslation(
+                        new Vector3(
+                        tilePosX * 10,
+                        tilePosY * 10,
+                        tilePosZ * 10));
+                rendering.DebugCube.Draw(rendering.WorldMatrix * ScalePosBounds, rendering.ViewMatrix, rendering.ProjectionMatrix);
             }
         }
     }
