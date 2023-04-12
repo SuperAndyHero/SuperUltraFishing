@@ -111,15 +111,37 @@ namespace SuperUltraFishing
                 if (!DebugMode && Velocity.Y < 0.01f)
                     Velocity.Y -= SinkSpeed;
 
-                Position += Velocity;
+                {
+                    Position.X += Velocity.X;
 
-                int debugBoxsize = 4;
-                //sets bounding box to position
-                BoundingSphere = new BoundingSphere(Position, debugBoxsize);
+                    int debugBoxsize = 4;
+                    //sets bounding box to position
+                    BoundingSphere = new BoundingSphere(Position, debugBoxsize);
+
+                    TileCollisions();
+                }
+
+                {
+                    Position.Y += Velocity.Y;
+
+                    int debugBoxsize = 4;
+                    //sets bounding box to position
+                    BoundingSphere = new BoundingSphere(Position, debugBoxsize);
+
+                    TileCollisions();
+                }
+
+                {
+                    Position.Z += Velocity.Z;
+
+                    int debugBoxsize = 4;
+                    //sets bounding box to position
+                    BoundingSphere = new BoundingSphere(Position, debugBoxsize);
+
+                    TileCollisions();
+                }
 
                 Velocity *= DebugMode ? 0 : SlowDown;
-
-                TileCollisions();
 
                 OldPosition = Position;
 
@@ -142,10 +164,30 @@ namespace SuperUltraFishing
             //CollideWithTile(1, 2, 1);//up
             //CollideWithTile(1, 1, 0);
             //CollideWithTile(1, 1, 2);
-            Position += TotalDir;
+            //Vector3 MaxVec = Vector3.Zero;
+            float MaxVecLength = 0;
+            float AvrVecLength = 0;
+
+            foreach (var vec in TotalDirList)
+            {
+                TotalDir += vec;
+                float veclen = vec.Length();
+                AvrVecLength += veclen / TotalDirList.Count;
+                if (veclen > MaxVecLength)
+                {
+                    MaxVecLength = veclen;
+                    //MaxVec = vec;
+                }
+            }
+            Vector3 norDir = TotalDir == Vector3.Zero ? Vector3.Zero : Vector3.Normalize(TotalDir);
+
+            Position += norDir * MaxVecLength;
+
             TotalDir = Vector3.Zero;
+            TotalDirList.Clear();
         }
         public Vector3 TotalDir = Vector3.Zero;
+        public List<Vector3> TotalDirList = new List<Vector3>();
         public void CollideWithTile(int i, int j, int k)
         {
             int tilePosX = (int)((BoundingSphere.Center.X / 10f) - 0.5f) + i;
@@ -181,7 +223,8 @@ namespace SuperUltraFishing
                     Vector3 dir = (Position - pointonbox);
                     Vector3 dirOpposite = Vector3.Normalize(dir) * BoundingSphere.Radius;
                     //Main.NewText(dir);
-                    TotalDir += dirOpposite - dir;
+                    TotalDirList.Add(dirOpposite - dir);
+                    //TotalDir += dirOpposite - dir;
 
                     Velocity *= 1f;// 0.75f;//may need to be changed
                 }
