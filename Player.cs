@@ -186,32 +186,37 @@ namespace SuperUltraFishing
             {
                 //List<(Vector3 off, Vector3 closestPoint)> CollisionList = new List<(Vector3 off, Vector3 closestPoint)>();
 
+                //OPIMIZATION TODO: since this checks which side is closest anyway, use of triangles could be removed completely
+
                 void CheckTriangle(Triangle triangle)
                 {
                     //clips into corners because block isnt checked
                     if (SphereIntersectsTriangle(BoundingSphere, triangle, out Vector3 closestPointOnTri))
                     {
-                        //remove
-                        //CollisionList.Add((
-                        //    triangle.Normal * (Vector3.Distance(BoundingSphere.Center, closestPointOnTri) - BoundingSphere.Radius),
-                        //      closestPointOnTri));
-
                         Position += triangle.Normal *
                             (Vector3.Distance(BoundingSphere.Center, closestPointOnTri) - BoundingSphere.Radius);
 
                         BoundingSphere.Center = Position;
-                        Velocity *= 0.9f;//friction (help prevents studders when going over corner)
+                        Velocity *= 1f;//friction (help prevents studders when going over corner)
                     }
                 }
 
-                //Triangle triangle;
-
-                List<(float distanceToCenter, Triangle triA, Triangle triB)> CollisionFaceList = new List<(float distanceToCenter, Triangle triA, Triangle triB)>();
+                //this list is so that the closest side can be moved to the front, this prevents one side taking priority
+                const float defaultDist = 100000;
+                float lastDistToCenter = defaultDist;
+                List<(Triangle triA, Triangle triB)> CollisionFaceList = new List<(Triangle triA, Triangle triB)>();
 
                 //up
                 if (world.ValidTilePos(tilePosX, tilePosY + 1, tilePosZ) && world.TempCollisionType(tilePosX, tilePosY + 1, tilePosZ) != 1)
                 {
-                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX, tilePosY + 0.5f, tilePosZ) * 10, Position),
+                    float distance = Vector3.Distance(new Vector3(tilePosX, tilePosY + 0.5f, tilePosZ) * 10, Position);
+                    int index = 1;
+                    if(distance < lastDistToCenter)
+                    {
+                        lastDistToCenter = distance;
+                        index = 0;
+                    }
+                    CollisionFaceList.Insert(index, (
                     new Triangle(
                             new Vector3(
                                 (tilePosX - 0.5f),
@@ -244,7 +249,14 @@ namespace SuperUltraFishing
                 //down
                 if (world.ValidTilePos(tilePosX, tilePosY - 1, tilePosZ) && world.TempCollisionType(tilePosX, tilePosY - 1, tilePosZ) != 1)
                 {
-                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX, tilePosY - 0.5f, tilePosZ) * 10, Position),
+                    float distance = Vector3.Distance(new Vector3(tilePosX, tilePosY - 0.5f, tilePosZ) * 10, Position);
+                    int index = 1;
+                    if (distance < lastDistToCenter)
+                    {
+                        lastDistToCenter = distance;
+                        index = 0;
+                    }
+                    CollisionFaceList.Insert(index, (
                     new Triangle(
                          new Vector3(
                             (tilePosX - 0.5f),
@@ -277,7 +289,14 @@ namespace SuperUltraFishing
                 //right
                 if (world.ValidTilePos(tilePosX + 1, tilePosY, tilePosZ) && world.TempCollisionType(tilePosX + 1, tilePosY, tilePosZ) != 1)
                 {
-                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX + 0.5f, tilePosY, tilePosZ) * 10, Position),
+                    float distance = Vector3.Distance(new Vector3(tilePosX + 0.5f, tilePosY, tilePosZ) * 10, Position);
+                    int index = 1;
+                    if (distance < lastDistToCenter)
+                    {
+                        lastDistToCenter = distance;
+                        index = 0;
+                    }
+                    CollisionFaceList.Insert(index, (
                     new Triangle(
                          new Vector3(
                             (tilePosX + 0.5f),
@@ -310,7 +329,14 @@ namespace SuperUltraFishing
                 //left
                 if (world.ValidTilePos(tilePosX - 1, tilePosY, tilePosZ) && world.TempCollisionType(tilePosX - 1, tilePosY, tilePosZ) != 1)
                 {
-                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX - 0.5f, tilePosY, tilePosZ) * 10, Position),
+                    float distance = Vector3.Distance(new Vector3(tilePosX - 0.5f, tilePosY, tilePosZ) * 10, Position);
+                    int index = 1;
+                    if (distance < lastDistToCenter)
+                    {
+                        lastDistToCenter = distance;
+                        index = 0;
+                    }
+                    CollisionFaceList.Insert(index, (
                     new Triangle(
                          new Vector3(
                             (tilePosX - 0.5f),
@@ -343,7 +369,14 @@ namespace SuperUltraFishing
                 //front
                 if (world.ValidTilePos(tilePosX, tilePosY, tilePosZ + 1) && world.TempCollisionType(tilePosX, tilePosY, tilePosZ + 1) != 1)
                 {
-                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX, tilePosY, tilePosZ  + 0.5f) * 10, Position),
+                    float distance = Vector3.Distance(new Vector3(tilePosX, tilePosY, tilePosZ + 0.5f) * 10, Position);
+                    int index = 1;
+                    if (distance < lastDistToCenter)
+                    {
+                        lastDistToCenter = distance;
+                        index = 0;
+                    }
+                    CollisionFaceList.Insert(index, (
                     new Triangle(
                          new Vector3(
                             (tilePosX + 0.5f),
@@ -376,7 +409,14 @@ namespace SuperUltraFishing
                 //back
                 if (world.ValidTilePos(tilePosX, tilePosY, tilePosZ - 1) && world.TempCollisionType(tilePosX, tilePosY, tilePosZ - 1) != 1)
                 {
-                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX, tilePosY, tilePosZ - 0.5f) * 10, Position),
+                    float distance = Vector3.Distance(new Vector3(tilePosX, tilePosY, tilePosZ - 0.5f) * 10, Position);
+                    int index = 1;
+                    if (distance < lastDistToCenter)
+                    {
+                        lastDistToCenter = distance;
+                        index = 0;
+                    }
+                    CollisionFaceList.Insert(index, (
                     new Triangle(
                          new Vector3(
                             (tilePosX + 0.5f),
@@ -406,39 +446,17 @@ namespace SuperUltraFishing
                     ));
                 }
 
-                CollisionFaceList.Sort((a, b) => (a.distanceToCenter > b.distanceToCenter ? 1 : -1));
-
-                bool done = false;
+                //bool done = false;
                 foreach (var obj in CollisionFaceList)
                 {
-                    if (!done)
-                    {
-                        debugVector3 = (obj.triA.PointA + obj.triA.PointB + obj.triA.PointC) / 3;
-                        done = true;
-                    }
+                    //if (!done)
+                    //{
+                    //    debugVector3 = (obj.triA.PointA + obj.triA.PointB + obj.triA.PointC) / 3;
+                    //    done = true;
+                    //}
                     CheckTriangle(obj.triA);
                     CheckTriangle(obj.triB);
                 }
-
-                //if (CollisionList.Count > 0)
-                //{
-                //    Vector3 offLast = CollisionList[0].off;
-                //    float closestLastDist = Vector3.Distance(CollisionList[0].closestPoint, Position);
-                //    debugVector3 = CollisionList[0].closestPoint;
-                //    foreach (var pair in CollisionList)
-                //    {
-                //        float dist = Vector3.Distance(pair.closestPoint, Position);
-                //        if (dist < closestLastDist)
-                //        {
-                //            debugVector3 = pair.closestPoint;
-                //            dist = closestLastDist;
-                //            offLast = pair.off;
-                //        }
-                //    }
-                //    Main.NewText(debugVector3);
-                //    Position += offLast;
-                //    BoundingSphere.Center = Position;
-                //}
             }
         }
 
@@ -516,13 +534,6 @@ namespace SuperUltraFishing
             float w = vc * denom;
             return a + ab * v + ac * w; // = u*a + v*b + w*c, u = va * denom = 1.0f-v-w
         }
-
-        //public static Vector3 ClosestPointOnBox(Vector3 point, BoundingBox box)
-        //{
-        //    return new Vector3(Math.Clamp(point.X, box.Min.X, box.Max.X),
-        //        Math.Clamp(point.Y, box.Min.Y, box.Max.Y),
-        //        Math.Clamp(point.Z, box.Min.Z, box.Max.Z));
-        //}
 
         public void DrawPlayer()
         {
