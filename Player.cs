@@ -20,6 +20,7 @@ using static Terraria.ModLoader.ModContent;
 using System.Security.Cryptography.X509Certificates;
 using System.Numerics;
 using Vector3 = Microsoft.Xna.Framework.Vector3;
+using static SuperUltraFishing.RobotPlayer;
 
 namespace SuperUltraFishing
 {
@@ -41,6 +42,8 @@ namespace SuperUltraFishing
         public BoundingSphere BoundingSphere;
         //public BoundingBox BoundingBox;
 
+        public Vector3 debugVector3 = new Vector3(1, 0, 0);
+
         public bool ShouldUpdate => fishingUIWindow.WindowActive;
         public bool DebugMode => fishingUIWindow.DebugMode;
 
@@ -53,7 +56,8 @@ namespace SuperUltraFishing
 
         public void Reset()
         {
-            BoundingSphere = new BoundingSphere();
+            int debugBoxsize = 4;
+            BoundingSphere = new BoundingSphere(Vector3.Zero, debugBoxsize);
             //BoundingBox = new BoundingBox();
             Position = new Vector3(world.AreaSizeX, world.AreaSizeY, world.AreaSizeZ) * 4;
             Velocity = Vector3.Zero;
@@ -118,10 +122,9 @@ namespace SuperUltraFishing
                 {
                     Position += Velocity;
 
-                    int debugBoxsize = 4;
                     //sets bounding box to position
-                    Vector3 off = new Vector3(debugBoxsize);
-                    BoundingSphere = new BoundingSphere(Position, debugBoxsize);
+                    //Vector3 off = new Vector3(debugBoxsize);
+                    BoundingSphere.Center = Position;
                     //BoundingBox = new BoundingBox(Position - off, Position + off);
                     TileCollisions();
                 }
@@ -181,77 +184,261 @@ namespace SuperUltraFishing
 
             if (world.ValidTilePos(tilePosX, tilePosY, tilePosZ) && world.TempCollisionType(tilePosX, tilePosY, tilePosZ) == 1)
             {
-                //    BoundingBox tileBox = new BoundingBox(
-                //        new Vector3(
-                //            (tilePosX - 0.5f),
-                //            (tilePosY - 0.5f),
-                //            (tilePosZ - 0.5f)) * 10,
-                //        new Vector3(
-                //            (tilePosX + 0.5f),
-                //            (tilePosY + 0.5f),
-                //            (tilePosZ + 0.5f)) * 10);
-
-
-                //if (BoundingSphere.Intersects(tileBox))
-                //{
-                //    Main.NewText("Contains");
-                //}
-                //else if (tileBox.Contains(BoundingSphere.Center) == ContainmentType.Intersects)
-                //{
-                //    Main.NewText("Itersect", Color.IndianRed);
-                //}
+                //List<(Vector3 off, Vector3 closestPoint)> CollisionList = new List<(Vector3 off, Vector3 closestPoint)>();
 
                 void CheckTriangle(Triangle triangle)
                 {
                     //clips into corners because block isnt checked
                     if (SphereIntersectsTriangle(BoundingSphere, triangle, out Vector3 closestPointOnTri))
                     {
-                        Main.NewText("Contains");
+                        //remove
+                        //CollisionList.Add((
+                        //    triangle.Normal * (Vector3.Distance(BoundingSphere.Center, closestPointOnTri) - BoundingSphere.Radius),
+                        //      closestPointOnTri));
 
-                        Position += triangle.Normal * 
+                        Position += triangle.Normal *
                             (Vector3.Distance(BoundingSphere.Center, closestPointOnTri) - BoundingSphere.Radius);
 
-
-                        //Main.NewText(dir);
-                        //TotalDirList.Add(dirOpposite - dir);
-                        //TotalDir += dirOpposite - dir;
-
-                        Velocity *= 0.5f;// 0.75f;//may need to be changed
+                        BoundingSphere.Center = Position;
+                        Velocity *= 0.9f;//friction (help prevents studders when going over corner)
                     }
                 }
 
-                //up, 1
-                Triangle triangleUp1 = new Triangle(
+                //Triangle triangle;
+
+                List<(float distanceToCenter, Triangle triA, Triangle triB)> CollisionFaceList = new List<(float distanceToCenter, Triangle triA, Triangle triB)>();
+
+                //up
+                if (world.ValidTilePos(tilePosX, tilePosY + 1, tilePosZ) && world.TempCollisionType(tilePosX, tilePosY + 1, tilePosZ) != 1)
+                {
+                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX, tilePosY + 0.5f, tilePosZ) * 10, Position),
+                    new Triangle(
+                            new Vector3(
+                                (tilePosX - 0.5f),
+                                (tilePosY + 0.5f),
+                                (tilePosZ - 0.5f)) * 10,
+                            new Vector3(
+                                (tilePosX - 0.5f),
+                                (tilePosY + 0.5f),
+                                (tilePosZ + 0.5f)) * 10,
+                            new Vector3(
+                                (tilePosX + 0.5f),
+                                (tilePosY + 0.5f),
+                                (tilePosZ - 0.5f)) * 10),
+                    new Triangle(
+                            new Vector3(
+                                (tilePosX + 0.5f),
+                                (tilePosY + 0.5f),
+                                (tilePosZ + 0.5f)) * 10,
+                            new Vector3(
+                                (tilePosX + 0.5f),
+                                (tilePosY + 0.5f),
+                                (tilePosZ - 0.5f)) * 10,
+                            new Vector3(
+                                (tilePosX - 0.5f),
+                                (tilePosY + 0.5f),
+                                (tilePosZ + 0.5f)) * 10)
+                    ));
+                }
+
+                //down
+                if (world.ValidTilePos(tilePosX, tilePosY - 1, tilePosZ) && world.TempCollisionType(tilePosX, tilePosY - 1, tilePosZ) != 1)
+                {
+                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX, tilePosY - 0.5f, tilePosZ) * 10, Position),
+                    new Triangle(
+                         new Vector3(
+                            (tilePosX - 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ - 0.5f)) * 10,
+                        new Vector3(
+                            (tilePosX + 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ - 0.5f)) * 10,
+                        new Vector3(
+                            (tilePosX - 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ + 0.5f)) * 10),
+                    new Triangle(
+                            new Vector3(
+                                (tilePosX + 0.5f),
+                                (tilePosY - 0.5f),
+                                (tilePosZ + 0.5f)) * 10,
+                            new Vector3(
+                                (tilePosX - 0.5f),
+                                (tilePosY - 0.5f),
+                                (tilePosZ + 0.5f)) * 10,
+                            new Vector3(
+                                (tilePosX + 0.5f),
+                                (tilePosY - 0.5f),
+                                (tilePosZ - 0.5f)) * 10)
+                    ));
+                }
+
+                //right
+                if (world.ValidTilePos(tilePosX + 1, tilePosY, tilePosZ) && world.TempCollisionType(tilePosX + 1, tilePosY, tilePosZ) != 1)
+                {
+                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX + 0.5f, tilePosY, tilePosZ) * 10, Position),
+                    new Triangle(
+                         new Vector3(
+                            (tilePosX + 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ - 0.5f)) * 10,
+                        new Vector3(
+                            (tilePosX + 0.5f),
+                            (tilePosY + 0.5f),
+                            (tilePosZ - 0.5f)) * 10,
+                        new Vector3(
+                            (tilePosX + 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ + 0.5f)) * 10),
+                    new Triangle(
+                            new Vector3(
+                                (tilePosX + 0.5f),
+                                (tilePosY + 0.5f),
+                                (tilePosZ + 0.5f)) * 10,
+                            new Vector3(
+                                (tilePosX + 0.5f),
+                                (tilePosY - 0.5f),
+                                (tilePosZ + 0.5f)) * 10,
+                            new Vector3(
+                                (tilePosX + 0.5f),
+                                (tilePosY + 0.5f),
+                                (tilePosZ - 0.5f)) * 10)
+                    ));
+                }
+
+                //left
+                if (world.ValidTilePos(tilePosX - 1, tilePosY, tilePosZ) && world.TempCollisionType(tilePosX - 1, tilePosY, tilePosZ) != 1)
+                {
+                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX - 0.5f, tilePosY, tilePosZ) * 10, Position),
+                    new Triangle(
+                         new Vector3(
+                            (tilePosX - 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ - 0.5f)) * 10,
+                        new Vector3(
+                            (tilePosX - 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ + 0.5f)) * 10,
+                        new Vector3(
+                            (tilePosX - 0.5f),
+                            (tilePosY + 0.5f),
+                            (tilePosZ - 0.5f)) * 10),
+                    new Triangle(
+                        new Vector3(
+                            (tilePosX - 0.5f),
+                            (tilePosY + 0.5f),
+                            (tilePosZ + 0.5f)) * 10,
                         new Vector3(
                             (tilePosX - 0.5f),
                             (tilePosY + 0.5f),
                             (tilePosZ - 0.5f)) * 10,
                         new Vector3(
                             (tilePosX - 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ + 0.5f)) * 10)
+                    ));
+                }
+
+                //front
+                if (world.ValidTilePos(tilePosX, tilePosY, tilePosZ + 1) && world.TempCollisionType(tilePosX, tilePosY, tilePosZ + 1) != 1)
+                {
+                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX, tilePosY, tilePosZ  + 0.5f) * 10, Position),
+                    new Triangle(
+                         new Vector3(
+                            (tilePosX + 0.5f),
+                            (tilePosY + 0.5f),
+                            (tilePosZ + 0.5f)) * 10,
+                        new Vector3(
+                            (tilePosX - 0.5f),
                             (tilePosY + 0.5f),
                             (tilePosZ + 0.5f)) * 10,
                         new Vector3(
                             (tilePosX + 0.5f),
-                            (tilePosY + 0.5f),
-                            (tilePosZ - 0.5f)) * 10);
-
-                CheckTriangle(triangleUp1);
-
-                Triangle triangleUp2 = new Triangle(
+                            (tilePosY - 0.5f),
+                            (tilePosZ + 0.5f)) * 10),
+                    new Triangle(
                         new Vector3(
-                            (tilePosX + 0.5f),
-                            (tilePosY + 0.5f),
+                            (tilePosX - 0.5f),
+                            (tilePosY - 0.5f),
                             (tilePosZ + 0.5f)) * 10,
                         new Vector3(
+                            (tilePosX + 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ + 0.5f)) * 10,
+                        new Vector3(
+                            (tilePosX - 0.5f),
+                            (tilePosY + 0.5f),
+                            (tilePosZ + 0.5f)) * 10)
+                    ));
+                }
+
+                //back
+                if (world.ValidTilePos(tilePosX, tilePosY, tilePosZ - 1) && world.TempCollisionType(tilePosX, tilePosY, tilePosZ - 1) != 1)
+                {
+                    CollisionFaceList.Add((Vector3.Distance(new Vector3(tilePosX, tilePosY, tilePosZ - 0.5f) * 10, Position),
+                    new Triangle(
+                         new Vector3(
                             (tilePosX + 0.5f),
                             (tilePosY + 0.5f),
                             (tilePosZ - 0.5f)) * 10,
                         new Vector3(
+                            (tilePosX + 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ - 0.5f)) * 10,
+                        new Vector3(
                             (tilePosX - 0.5f),
                             (tilePosY + 0.5f),
-                            (tilePosZ + 0.5f)) * 10);
+                            (tilePosZ - 0.5f)) * 10),
+                    new Triangle(
+                        new Vector3(
+                            (tilePosX - 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ - 0.5f)) * 10,
+                        new Vector3(
+                            (tilePosX - 0.5f),
+                            (tilePosY + 0.5f),
+                            (tilePosZ - 0.5f)) * 10,
+                        new Vector3(
+                            (tilePosX + 0.5f),
+                            (tilePosY - 0.5f),
+                            (tilePosZ - 0.5f)) * 10)
+                    ));
+                }
 
-                CheckTriangle (triangleUp2);
+                CollisionFaceList.Sort((a, b) => (a.distanceToCenter > b.distanceToCenter ? 1 : -1));
+
+                bool done = false;
+                foreach (var obj in CollisionFaceList)
+                {
+                    if (!done)
+                    {
+                        debugVector3 = (obj.triA.PointA + obj.triA.PointB + obj.triA.PointC) / 3;
+                        done = true;
+                    }
+                    CheckTriangle(obj.triA);
+                    CheckTriangle(obj.triB);
+                }
+
+                //if (CollisionList.Count > 0)
+                //{
+                //    Vector3 offLast = CollisionList[0].off;
+                //    float closestLastDist = Vector3.Distance(CollisionList[0].closestPoint, Position);
+                //    debugVector3 = CollisionList[0].closestPoint;
+                //    foreach (var pair in CollisionList)
+                //    {
+                //        float dist = Vector3.Distance(pair.closestPoint, Position);
+                //        if (dist < closestLastDist)
+                //        {
+                //            debugVector3 = pair.closestPoint;
+                //            dist = closestLastDist;
+                //            offLast = pair.off;
+                //        }
+                //    }
+                //    Main.NewText(debugVector3);
+                //    Position += offLast;
+                //    BoundingSphere.Center = Position;
+                //}
             }
         }
 
@@ -343,12 +530,19 @@ namespace SuperUltraFishing
                 for (int j = 0; j < 3; j++)
                     for (int k = 0; k < 3; k++)
                         DrawDebugTileBox(i, j, k);
+
             //DrawDebugTileBox(0, 1, 1);
             //DrawDebugTileBox(2, 1, 1);
             //DrawDebugTileBox(1, 0, 1);
             //DrawDebugTileBox(1, 2, 1);
             //DrawDebugTileBox(1, 1, 0);
             //DrawDebugTileBox(1, 1, 2);
+
+            if (debugVector3 != Vector3.Zero)
+            {
+                Matrix ScalePosBounds = Matrix.CreateScale(0.1f) * Matrix.CreateTranslation(debugVector3);
+                rendering.DebugCube.Draw(rendering.WorldMatrix * ScalePosBounds, rendering.ViewMatrix, rendering.ProjectionMatrix);
+            }
         }
 
         public void DrawDebugTileBox(int i, int j, int k)
