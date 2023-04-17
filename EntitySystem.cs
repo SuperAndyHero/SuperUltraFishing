@@ -43,7 +43,7 @@ namespace SuperUltraFishing
         public Model Model { get; private set; }
         public Asset<Texture2D> Texture { get; private set; }
         public Matrix[] BoneTransforms;
-        public BoundingSphere BoundingSphere;//may need to be a array
+        public BoundingSphere TransformedBoundingSphere;//may need to be a array for having hitboxes be model part
 
         public Entity3D() 
         {
@@ -51,7 +51,7 @@ namespace SuperUltraFishing
             Model = ContentHandler.GetAsset<Model>(ModelPath);
             Texture = Request<Texture2D>(TexturePath);
             BoneTransforms = Enumerable.Repeat(Matrix.Identity, Model.Bones.Count).ToArray();
-            BoundingSphere = Model.Meshes[0].BoundingSphere;
+            TransformedBoundingSphere = Model.Meshes[0].BoundingSphere;
             SetEffect();
             OnCreate();
         }
@@ -82,30 +82,39 @@ namespace SuperUltraFishing
             Position += Velocity;
 
             //sets bounding sphere to position
-            Matrix SphereTransform = Matrix.CreateScale(Scale) * Matrix.CreateTranslation(Position);//may need rotation
-            BoundingSphere = Model.Meshes[0].BoundingSphere.Transform(SphereTransform);
+            Matrix SphereTransform = Matrix.CreateScale(Scale * 10) * Matrix.CreateTranslation(Position);//may need rotation
+            TransformedBoundingSphere = Model.Meshes[0].BoundingSphere.Transform(SphereTransform);
+
+            Vector3 Collide(Vector3 SphrACenter, float SphrARad, Vector3 SphrBCenter, float SphrBRad)
+            {
+                Vector3 dirVector = Vector3.Normalize(SphrACenter - SphrBCenter);
+                float dist = Vector3.Distance(SphrACenter, SphrBCenter);
+                float offDist = (SphrARad + SphrBRad) - dist;
+
+                return (dirVector * (offDist * 0.5f));
+            }
 
             //collision
-            if (BoundingSphere.Intersects(EntitySystem.player.BoundingSphere))
+            if (TransformedBoundingSphere.Intersects(EntitySystem.player.BoundingSphere))
             {
-                //buggy collision solving
-                //Main.NewText("Colliding");
-                Vector3 dirVector = Vector3.Normalize(BoundingSphere.Center - EntitySystem.player.BoundingSphere.Center);
+                Vector3 collideOffset = Collide(TransformedBoundingSphere.Center, TransformedBoundingSphere.Radius, EntitySystem.player.BoundingSphere.Center, EntitySystem.player.BoundingSphere.Radius);
 
-                //float playerVelLength = EntitySystem.player.Velocity.Length();
-                //float velLength = Velocity.Length();
+                Position += collideOffset;
+                EntitySystem.player.Position -= collideOffset;
+            }
 
-                //float ratio = playerVelLength == 0 ? 1 : velLength == 0 ? 1 : playerVelLength / velLength;
-                //float ratio2 = playerVelLength == 0 ? 1 : velLength == 0 ? 1 : velLength / playerVelLength;
+            foreach(var ent in EntitySystem.EntityArray)
+            {
+                if (ent == null || ent == this) 
+                    continue;
 
-                //Position += (vector * EntitySystem.player.Velocity.Length() * 1f);// * 2;
-                //EntitySystem.player.Position -= (vector * Velocity.Length() * 1f);// * 2;
+                if (TransformedBoundingSphere.Intersects(ent.TransformedBoundingSphere))
+                {
+                    Vector3 collideOffset = Collide(TransformedBoundingSphere.Center, TransformedBoundingSphere.Radius, ent.TransformedBoundingSphere.Center, ent.TransformedBoundingSphere.Radius);
 
-                Velocity += (dirVector * EntitySystem.player.Velocity.Length() * 0.5f);// * 2;
-                EntitySystem.player.Velocity -= (dirVector * Velocity.Length() * 0.5f);// * 2;
-
-                //Velocity /= ratio2;
-                //EntitySystem.player.Velocity /= ratio;
+                    Position += collideOffset;
+                    ent.Position -= collideOffset;
+                }
             }
 
             AI();
@@ -124,9 +133,9 @@ namespace SuperUltraFishing
                 {
                     for (int k = 0; k < 3; k++)
                     {
-                        int tilePosX = (int)((BoundingSphere.Center.X / 10f) - 0.5f) + i;
-                        int tilePosY = (int)((BoundingSphere.Center.Y / 10f) - 0.5f) + j;
-                        int tilePosZ = (int)((BoundingSphere.Center.Z / 10f) - 0.5f) + k;
+                        int tilePosX = (int)((TransformedBoundingSphere.Center.X / 10f) - 0.5f) + i;
+                        int tilePosY = (int)((TransformedBoundingSphere.Center.Y / 10f) - 0.5f) + j;
+                        int tilePosZ = (int)((TransformedBoundingSphere.Center.Z / 10f) - 0.5f) + k;
 
                         if (EntitySystem.world.ValidTilePos(tilePosX, tilePosY, tilePosZ) && EntitySystem.world.TempCollisionType(tilePosX, tilePosY, tilePosZ) == 1)
                         {
@@ -149,11 +158,11 @@ namespace SuperUltraFishing
                 effect.SetBoneTransforms(BoneTransforms);
 
                 Matrix ScaleRotPos = Matrix.CreateScale(Scale) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
-                Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
+                //Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
 
                 if(true)//debug
                 {
-                    Matrix ScalePosBounds = Matrix.CreateScale(BoundingSphere.Radius) * Matrix.CreateTranslation(BoundingSphere.Center);
+                    Matrix ScalePosBounds = Matrix.CreateScale(TransformedBoundingSphere.Radius * 0.1f) * Matrix.CreateTranslation(TransformedBoundingSphere.Center);
                     EntitySystem.rendering.DebugSphere.Draw(EntitySystem.rendering.WorldMatrix * ScalePosBounds, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
                 }
             }
