@@ -21,7 +21,7 @@ using ReLogic.Content;
 
 namespace SuperUltraFishing
 {
-    internal class Rendering : ModSystem
+    public class Rendering : ModSystem
     {
         private Matrix _projection;
         public Matrix ProjectionMatrix {

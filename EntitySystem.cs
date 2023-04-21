@@ -26,6 +26,7 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Input.Touch;
 using Microsoft.Xna.Framework.Media;
 using Microsoft.Xna.Framework.Design;
+using static SuperUltraFishing.Collision;
 
 namespace SuperUltraFishing
 {
@@ -85,7 +86,15 @@ namespace SuperUltraFishing
             Matrix SphereTransform = Matrix.CreateScale(Scale * 10) * Matrix.CreateTranslation(Position);//may need rotation
             TransformedBoundingSphere = Model.Meshes[0].BoundingSphere.Transform(SphereTransform);
 
-            Vector3 Collide(Vector3 SphrACenter, float SphrARad, Vector3 SphrBCenter, float SphrBRad)
+            Collision();
+
+            AI();
+            Animate();
+        }
+
+        public void Collision()
+        {
+            static Vector3 CollideSphrWithSphr(Vector3 SphrACenter, float SphrARad, Vector3 SphrBCenter, float SphrBRad)
             {
                 Vector3 dirVector = Vector3.Normalize(SphrACenter - SphrBCenter);
                 float dist = Vector3.Distance(SphrACenter, SphrBCenter);
@@ -94,32 +103,42 @@ namespace SuperUltraFishing
                 return (dirVector * (offDist * 0.5f));
             }
 
-            //collision
             if (TransformedBoundingSphere.Intersects(EntitySystem.player.BoundingSphere))
             {
-                Vector3 collideOffset = Collide(TransformedBoundingSphere.Center, TransformedBoundingSphere.Radius, EntitySystem.player.BoundingSphere.Center, EntitySystem.player.BoundingSphere.Radius);
+                Vector3 collideOffset = CollideSphrWithSphr(TransformedBoundingSphere.Center, TransformedBoundingSphere.Radius, EntitySystem.player.BoundingSphere.Center, EntitySystem.player.BoundingSphere.Radius);
 
                 Position += collideOffset;
                 EntitySystem.player.Position -= collideOffset;
             }
 
-            foreach(var ent in EntitySystem.EntityArray)
+            foreach (var ent in EntitySystem.EntityArray)
             {
-                if (ent == null || ent == this) 
+                if (ent == null || ent == this)
                     continue;
 
                 if (TransformedBoundingSphere.Intersects(ent.TransformedBoundingSphere))
                 {
-                    Vector3 collideOffset = Collide(TransformedBoundingSphere.Center, TransformedBoundingSphere.Radius, ent.TransformedBoundingSphere.Center, ent.TransformedBoundingSphere.Radius);
+                    Vector3 collideOffset = CollideSphrWithSphr(TransformedBoundingSphere.Center, TransformedBoundingSphere.Radius, ent.TransformedBoundingSphere.Center, ent.TransformedBoundingSphere.Radius);
 
                     Position += collideOffset;
                     ent.Position -= collideOffset;
                 }
             }
 
-            AI();
-            Animate();
+            for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; j++)
+                    for (int k = 0; k < 3; k++)
+                    {
+                        Vector3 offset = TransformedBoundingSphere.Center - CollideSphereWithTile(TransformedBoundingSphere, i, j, k, EntitySystem.world, out bool Collided);
+                        Position -= offset;
+                        TransformedBoundingSphere.Center -= offset;
+                        //if (Collided)
+                        //{
+                        //    Velocity *= 0.9f;
+                        //}
+                    }
         }
+
         public virtual void PreUpdate() { }
         public virtual void AI() { }
         public virtual void Animate() { }
@@ -158,7 +177,7 @@ namespace SuperUltraFishing
                 effect.SetBoneTransforms(BoneTransforms);
 
                 Matrix ScaleRotPos = Matrix.CreateScale(Scale) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
-                //Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
+                Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
 
                 if(true)//debug
                 {
@@ -172,7 +191,7 @@ namespace SuperUltraFishing
         public virtual void PostDraw() { }
     }
 
-    internal class EntitySystem : ModSystem
+    public class EntitySystem : ModSystem
     {
         public World world;
         public Rendering rendering;
