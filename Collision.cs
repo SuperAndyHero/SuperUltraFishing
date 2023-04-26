@@ -374,5 +374,15 @@ namespace SuperUltraFishing
             float w = vc * denom;
             return a + ab * v + ac * w; // = u*a + v*b + w*c, u = va * denom = 1.0f-v-w
         }
+
+        public static Vector3 CollideSphrWithSphr(Vector3 SphrACenter, float SphrARad, Vector3 SphrBCenter, float SphrBRad)
+        {
+            Vector3 dirVector = Vector3.Normalize(SphrACenter - SphrBCenter);
+            float dist = Vector3.Distance(SphrACenter, SphrBCenter);
+            float offDist = (SphrARad + SphrBRad) - dist;
+
+            return (dirVector * (offDist * 0.5f));//an offset to be applied to both spheres
+            //this could be changed to take sphere size or mass into account and return 2 offsets
+        }
     }
 }

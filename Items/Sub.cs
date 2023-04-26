@@ -16,7 +16,7 @@ namespace SuperUltraFishing.Items
 	{
 		public override void SetStaticDefaults()
 		{
-			DisplayName.SetDefault("SubName");
+			DisplayName.SetDefault("SubNameHere");
 			Tooltip.SetDefault("This is a basic modded sword.");
 		}
 
@@ -55,10 +55,21 @@ namespace SuperUltraFishing.Items
 
 		public override bool AltFunctionUse(Player player) => true;
 
-        //public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
-        //{
+        public override bool PreDrawInInventory(SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
+        {
+            Texture2D Base = ModContent.Request<Texture2D>("SuperUltraFishing/Items/SubBase").Value;
+            spriteBatch.Draw(Base, position, frame, drawColor, 0f, origin, scale, default, 0f);//drawColor.MultiplyRGBA(itemColor)
 
-        //	return true;
-        //      }
+            Texture2D Casing = ModContent.Request<Texture2D>("SuperUltraFishing/Items/BasicCasing").Value;
+            spriteBatch.Draw(Casing, position, frame, drawColor, 0f, origin, scale, default, 0f);
+
+            return false;
+        }
+
+        public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
+        {
+			//todo
+            return base.PreDrawInWorld(spriteBatch, lightColor, alphaColor, ref rotation, ref scale, whoAmI);
+        }
     }
 }

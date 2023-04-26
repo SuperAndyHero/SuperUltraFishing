@@ -120,13 +120,11 @@ namespace SuperUltraFishing
                 if (!DebugMode && Velocity.Y < 0.01f)
                     Velocity.Y -= SinkSpeed;
 
+                //critical movement updates
                 {
                     Position += Velocity;
 
-                    //sets bounding box to position
-                    //Vector3 off = new Vector3(debugBoxsize);
                     BoundingSphere.Center = Position;
-                    //BoundingBox = new BoundingBox(Position - off, Position + off);
                     TileCollisions();
                 }
 
@@ -147,9 +145,7 @@ namespace SuperUltraFishing
                     {
                         Position = BoundingSphere.Center = Collision.CollideSphereWithTile(BoundingSphere, i, j, k, world, out bool Collided);
                         //if (Collided)
-                        //{
                         //    Velocity *= 0.9f;
-                        //}
                     }
         }
         public Vector3 TotalDir = Vector3.Zero;
