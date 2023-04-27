@@ -31,6 +31,8 @@ namespace SuperUltraFishing
 
         public Point16 LastWorldLocation = Point16.Zero;
 
+        public float WaterLevel;
+
 
         public static HashSet<ushort> FourSidedTiles;
 
@@ -667,6 +669,8 @@ namespace SuperUltraFishing
             //List<(Point16 center, int total)> waterBodyList = WaterBodyScan(worldrect.Value);
 
             CaptureWorldArea(worldrect.Value);//temp name
+
+            WaterLevel = AreaSizeY - ((World.wallBuffer * 2) + 1.75f);
 
             WorldGenerated = true;
             return true;

@@ -40,6 +40,7 @@ namespace SuperUltraFishing
         public float Yaw = 0;
         public float Pitch = 0;
         public float Scale = 1f;
+        public const float ScaleOffset = 0.01f;
         public bool active = true;
         public Model Model { get; private set; }
         public Asset<Texture2D> Texture { get; private set; }
@@ -83,7 +84,7 @@ namespace SuperUltraFishing
             Position += Velocity;
 
             //sets bounding sphere to position
-            Matrix SphereTransform = Matrix.CreateScale(Scale * 10) * Matrix.CreateTranslation(Position);//may need rotation
+            Matrix SphereTransform = Matrix.CreateScale(Scale * 10 * ScaleOffset) * Matrix.CreateTranslation(Position);//may need rotation
             TransformedBoundingSphere = Model.Meshes[0].BoundingSphere.Transform(SphereTransform);
 
             Collision();
@@ -165,7 +166,7 @@ namespace SuperUltraFishing
                 effect.Texture = Texture.Value;
                 effect.SetBoneTransforms(BoneTransforms);
 
-                Matrix ScaleRotPos = Matrix.CreateScale(Scale) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
+                Matrix ScaleRotPos = Matrix.CreateScale(Scale * ScaleOffset) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
                 Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
 
                 if (true)//debug sphere collision

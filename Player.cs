@@ -120,15 +120,27 @@ namespace SuperUltraFishing
                 if (!DebugMode && Velocity.Y < 0.01f)
                     Velocity.Y -= SinkSpeed;
 
-                //critical movement updates
+                //keeps player below water height
+                float waterlevel = world.WaterLevel * 10;
+                const int waterBoundsYOffset = 3;
+                if (!DebugMode && Position.Y + waterBoundsYOffset >= waterlevel)
                 {
-                    Position += Velocity;
+                    if (Position.Y + (waterBoundsYOffset - 1) >= waterlevel)
+                        Position.Y -= ((Position.Y + (waterBoundsYOffset - 1.1f)) - waterlevel);
 
-                    BoundingSphere.Center = Position;
-                    TileCollisions();
+                    Velocity.Y -= 0.075f;
                 }
 
+                Position += Velocity;
+
+                BoundingSphere.Center = Position;
+                TileCollisions();
+
+
+
                 Velocity *= DebugMode ? 0 : SlowDown;
+
+
 
                 OldPosition = Position;
 

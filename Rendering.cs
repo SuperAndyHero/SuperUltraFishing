@@ -415,6 +415,14 @@ namespace SuperUltraFishing
                 //solid tiles, does the expensive reframe check
                 if (!Main.tileFrameImportant[tile.TileType])
                 {
+                    //adds blocks that dont attach to any other blocks so that sand does not fall
+                    for (int i = 0; i < 3; i++)
+                    {
+                        int worldx = i + 5;
+                        Main.tile[worldx, 8].Get<TileWallWireStateData>().HasTile = true;
+                        Main.tile[worldx, 8].Get<TileTypeData>().Type = TileID.SillyBalloonPink;//needs a better block since it connects to itself
+                    }
+
                     for (int i = 0; i < 3; i++)
                     {
                         for (int j = 0; j < 3; j++)
@@ -514,7 +522,7 @@ namespace SuperUltraFishing
             {
                 for (int z = 0; z < (sizeZ); z += WaterPlaneSize)
                 {
-                    AddWaterPlane(new Vector3(x - 0.5f, sizeY - ((World.wallBuffer * 2) + 2.05f), (z + WaterPlaneSize) - 0.5f), WaterPlaneSize, new Vector3(0, (float)Math.PI, 0), new Color(0.045f, 0.2f, 0.45f, 0.0f));
+                    AddWaterPlane(new Vector3(x - 0.5f, world.WaterLevel, (z + WaterPlaneSize) - 0.5f), WaterPlaneSize, new Vector3(0, (float)Math.PI, 0), new Color(0.045f, 0.2f, 0.45f, 0.0f));
                     ///*debug*/AddWaterPlane(new Vector3(x - 0.5f, sizeY - ((World.wallBuffer * 2)), z - 0.5f), WaterPlaneSize, new Vector3(0, 0, 0), new Color(0.025f, 0.1f, 0.25f, 0.0f));
                 }
             }
