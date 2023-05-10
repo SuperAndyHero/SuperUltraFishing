@@ -133,8 +133,12 @@ namespace SuperUltraFishing
             //spawn fish
             if (Main.keyState.IsKeyDown(Keys.Insert) && !Main.oldKeyState.IsKeyDown(Keys.Insert))
             {
+                if(Main.keyState.IsKeyDown(Keys.LeftShift))
+                    entitySystem.SpawnEntity(typeof(FishBone), player.Position);
+                else
+                    entitySystem.SpawnEntity(typeof(SimpleFish), player.Position);
                 Main.NewText("Spawn Fish Bone");
-                entitySystem.SpawnEntity(typeof(FishBone), player.Position);
+                //entitySystem.SpawnEntity(typeof(FishBone), player.Position);
             }
 
 

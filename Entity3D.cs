@@ -40,7 +40,7 @@ namespace SuperUltraFishing
         public float Yaw = 0;
         public float Pitch = 0;
         public float Scale = 1f;
-        public const float ScaleOffset = 0.01f;
+        public const float ModelScale = 0.01f;//property?
         public bool active = true;
         public Model Model { get; private set; }
         public Asset<Texture2D> Texture { get; private set; }
@@ -51,7 +51,8 @@ namespace SuperUltraFishing
         {
             EntitySystem = GetInstance<EntitySystem>();
             Model = ContentHandler.GetAsset<Model>(ModelPath);
-            Texture = Request<Texture2D>(TexturePath);
+            if(TexturePath != null)
+                Texture = Request<Texture2D>(TexturePath);
             BoneTransforms = Enumerable.Repeat(Matrix.Identity, Model.Bones.Count).ToArray();
             TransformedBoundingSphere = Model.Meshes[0].BoundingSphere;
             SetEffect();
@@ -73,6 +74,7 @@ namespace SuperUltraFishing
         public virtual float MoveSpeed => 1f;
         public virtual string ModelPath => "SuperUltraFishing/Models/20Dice";
         public virtual string TexturePath => null;
+        public virtual Color ModelColor => Color.White;
 
         //onetimecreate
         public void Update()
@@ -84,7 +86,7 @@ namespace SuperUltraFishing
             Position += Velocity;
 
             //sets bounding sphere to position
-            Matrix SphereTransform = Matrix.CreateScale(Scale * 10 * ScaleOffset) * Matrix.CreateTranslation(Position);//may need rotation
+            Matrix SphereTransform = Matrix.CreateScale(Scale * 10 * ModelScale) * Matrix.CreateTranslation(Position);//may need rotation
             TransformedBoundingSphere = Model.Meshes[0].BoundingSphere.Transform(SphereTransform);
 
             Collision();
@@ -163,10 +165,11 @@ namespace SuperUltraFishing
             {
                 //this assumes the model has all parts set to the default effect, this may need to be changed to use a cached effect reference, or change the values for each mech part seperately
                 SkinnedEffect effect = EntitySystem.rendering.ModelEffect;
-                effect.Texture = Texture.Value;
+                if(Texture.Value != null)
+                    effect.Texture = Texture.Value;
                 effect.SetBoneTransforms(BoneTransforms);
 
-                Matrix ScaleRotPos = Matrix.CreateScale(Scale * ScaleOffset) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
+                Matrix ScaleRotPos = Matrix.CreateScale(Scale * ModelScale) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
                 Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
 
                 if (true)//debug sphere collision

@@ -43,7 +43,6 @@ namespace SuperUltraFishing
                 //OPIMIZATION TODO: since this checks which side is closest anyway, use of triangles could be removed completely
                 void CheckTriangle(Triangle triangle)
                 {
-                    //clips into corners because block isnt checked
                     if (SphereIntersectsTriangle(BoundingSphere, triangle, out Vector3 closestPointOnTri))
                     {
                         StartPosition += triangle.Normal *
