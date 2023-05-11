@@ -146,6 +146,7 @@ namespace SuperUltraFishing
 
                 nextMoveDirection = Vector3.Zero;
                 CurrentMoveSpeed = BaseMoveSpeed;
+                //Main.NewText(Position);
             }
         }
 
@@ -165,10 +166,10 @@ namespace SuperUltraFishing
 
         public void DrawPlayer()
         {
-            for (int i = 0; i < 3; i++)
-                for (int j = 0; j < 3; j++)
-                    for (int k = 0; k < 3; k++)
-                        DrawDebugTileBox(i, j, k);
+            //for (int i = 0; i < 3; i++)
+            //    for (int j = 0; j < 3; j++)
+            //        for (int k = 0; k < 3; k++)
+            //            DrawDebugTileBox(i, j, k);
 
             //DrawDebugTileBox(0, 1, 1);
             //DrawDebugTileBox(2, 1, 1);

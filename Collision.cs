@@ -376,7 +376,13 @@ namespace SuperUltraFishing
 
         public static Vector3 CollideSphrWithSphr(Vector3 SphrACenter, float SphrARad, Vector3 SphrBCenter, float SphrBRad)
         {
-            Vector3 dirVector = Vector3.Normalize(SphrACenter - SphrBCenter);
+            Vector3 dirVector;
+
+            if (SphrACenter == SphrBCenter)//prevents a NAN bug
+                dirVector = Vector3.Zero;
+            else
+                dirVector = Vector3.Normalize(SphrACenter - SphrBCenter);
+
             float dist = Vector3.Distance(SphrACenter, SphrBCenter);
             float offDist = (SphrARad + SphrBRad) - dist;
 

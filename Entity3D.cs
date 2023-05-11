@@ -40,12 +40,15 @@ namespace SuperUltraFishing
         public float Yaw = 0;
         public float Pitch = 0;
         public float Scale = 1f;
-        public const float ModelScale = 0.01f;//property?
         public bool active = true;
         public Model Model { get; private set; }
         public Asset<Texture2D> Texture { get; private set; }
         public Matrix[] BoneTransforms;
         public BoundingSphere TransformedBoundingSphere;//may need to be a array for having hitboxes be model part
+
+        public virtual float ModelScale => 1f;
+        public virtual float BoundingSphereScale => 1f;//rename to size
+        public virtual Color ModelColor => Color.White;
 
         public Entity3D()
         {
@@ -54,7 +57,7 @@ namespace SuperUltraFishing
             if(TexturePath != null)
                 Texture = Request<Texture2D>(TexturePath);
             BoneTransforms = Enumerable.Repeat(Matrix.Identity, Model.Bones.Count).ToArray();
-            TransformedBoundingSphere = Model.Meshes[0].BoundingSphere;
+            TransformedBoundingSphere = new BoundingSphere(default, 1);
             SetEffect();
             OnCreate();
         }
@@ -74,7 +77,8 @@ namespace SuperUltraFishing
         public virtual float MoveSpeed => 1f;
         public virtual string ModelPath => "SuperUltraFishing/Models/20Dice";
         public virtual string TexturePath => null;
-        public virtual Color ModelColor => Color.White;
+
+        //public virtual Vector3 BoundingSphereOffset = Vector3.Zero;
 
         //onetimecreate
         public void Update()
@@ -86,8 +90,7 @@ namespace SuperUltraFishing
             Position += Velocity;
 
             //sets bounding sphere to position
-            Matrix SphereTransform = Matrix.CreateScale(Scale * 10 * ModelScale) * Matrix.CreateTranslation(Position);//may need rotation
-            TransformedBoundingSphere = Model.Meshes[0].BoundingSphere.Transform(SphereTransform);
+            TransformedBoundingSphere = new BoundingSphere(Position, Scale * BoundingSphereScale);
 
             Collision();
 
@@ -103,6 +106,7 @@ namespace SuperUltraFishing
                 Vector3 collideOffset = CollideSphrWithSphr(TransformedBoundingSphere.Center, TransformedBoundingSphere.Radius, EntitySystem.player.BoundingSphere.Center, EntitySystem.player.BoundingSphere.Radius);
 
                 Position += collideOffset;
+                Velocity += (collideOffset * 0.05f);
                 EntitySystem.player.Position -= collideOffset;
             }
 
@@ -165,14 +169,18 @@ namespace SuperUltraFishing
             {
                 //this assumes the model has all parts set to the default effect, this may need to be changed to use a cached effect reference, or change the values for each mech part seperately
                 SkinnedEffect effect = EntitySystem.rendering.ModelEffect;
-                if(Texture.Value != null)
+                if(Texture != null)
                     effect.Texture = Texture.Value;
                 effect.SetBoneTransforms(BoneTransforms);
+                effect.DiffuseColor = ModelColor.ToVector3();
 
                 Matrix ScaleRotPos = Matrix.CreateScale(Scale * ModelScale) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
                 Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
+                //crashes if blendweight / blend index array does not exist in vertex dec since this uses skinned effect
+                //having no vertex colors is fine
+                //needs another effect if there needs to be a entity with no armature
 
-                if (true)//debug sphere collision
+                if (false)//debug sphere drawing
                 {
                     Matrix ScalePosBounds = Matrix.CreateScale(TransformedBoundingSphere.Radius * 0.1f) * Matrix.CreateTranslation(TransformedBoundingSphere.Center);
                     EntitySystem.rendering.DebugSphere.Draw(EntitySystem.rendering.WorldMatrix * ScalePosBounds, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
