@@ -18,12 +18,13 @@ using Terraria.ModLoader;
 using Terraria.UI;
 using static Terraria.ModLoader.ModContent;
 using ReLogic.Content;
+using SuperUltraFishing.World;
 
 namespace SuperUltraFishing.Render
 {
     public class Rendering : ModSystem
     {
-        private World world;
+        private GameWorld world;
         private RobotPlayer player;
         private EntitySystem entitySystem;
         private FishingUIWindow fishingUIWindow;
@@ -65,7 +66,7 @@ namespace SuperUltraFishing.Render
 
         public override void PostAddRecipes()
         {
-            world = GetInstance<World>();
+            world = GetInstance<GameWorld>();
             player = GetInstance<RobotPlayer>();
             entitySystem = GetInstance<EntitySystem>();
             fishingUIWindow = GetInstance<FishingUIWindow>();
@@ -87,9 +88,7 @@ namespace SuperUltraFishing.Render
                 player.DrawPlayer();
 
                 Mesh.DrawWater();
-
-                UI.DrawUI();
-
+                //anything drawn in tis will be effect by the water distort shader, since it is applied when the render target is drawn to the screen
                 Main.graphics.GraphicsDevice.SetRenderTarget(null);
             }
         }

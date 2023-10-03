@@ -17,6 +17,7 @@ using Terraria.ModLoader;
 using Terraria.UI;
 using SuperUltraFishing.Render;
 using static Terraria.ModLoader.ModContent;
+using SuperUltraFishing.World;
 
 namespace SuperUltraFishing
 {
@@ -26,7 +27,7 @@ namespace SuperUltraFishing
         public bool NoClip = false;
         public bool WindowActive = false;
 
-        private World world;
+        private GameWorld world;
         private Rendering rendering;
         private RobotPlayer player;
         private EntitySystem entitySystem;
@@ -36,7 +37,7 @@ namespace SuperUltraFishing
 
         public override void PostAddRecipes()
         {
-            world = GetInstance<World>();
+            world = GetInstance<GameWorld>();
             rendering = GetInstance<Rendering>();
             player = GetInstance<RobotPlayer>();
             entitySystem = GetInstance<EntitySystem>();
@@ -65,13 +66,23 @@ namespace SuperUltraFishing
         {
             if (WindowActive)
             {
-                Color backgroundColor = rendering.SkyColor;
+                spriteBatch.End();
+                Color backgroundColor = rendering.Biome.SkyColor;
+                Rectangle windowSize = new Rectangle(100, 100, Main.screenWidth - 200, Main.screenHeight - 200);
+
+                //extra end/begin so that the blank background isnt effect by ui scale
+                spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone, null);
                 spriteBatch.Draw(Terraria.GameContent.TextureAssets.BlackTile.Value, new Rectangle(100, 100, Main.screenWidth - 200, Main.screenHeight - 200), backgroundColor);
                 spriteBatch.End();
 
+                //everything drawn in this sb will be effected by the water shader
                 rendering.WaterPostProcessEffect.Parameters["DistortMap"].SetValue((Texture)(object)rendering.WaterTarget);
-                spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone, rendering.WaterPostProcessEffect, Main.UIScaleMatrix);
-                spriteBatch.Draw(rendering.WindowTarget, new Rectangle(100, 100, Main.screenWidth - 200, Main.screenHeight - 200), Color.White);
+                spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone, rendering.WaterPostProcessEffect);
+                spriteBatch.Draw(rendering.WindowTarget, windowSize, Color.White);
+                spriteBatch.End();
+
+                spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone, null);
+                rendering.UI.DrawUI(spriteBatch, windowSize);
                 spriteBatch.End();
 
                 spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone, null, Main.UIScaleMatrix);
@@ -180,7 +191,7 @@ namespace SuperUltraFishing
                 Main.cursorScale = 0;
 
                 //lock mouse to center
-                if ((new Vector2(Main.mouseX, Main.mouseY) - new Vector2(Main.screenWidth / 2, Main.screenHeight / 2)).Length() > 200)
+                if (!Main.keyState.IsKeyDown(Keys.LeftControl) &&(new Vector2(Main.mouseX, Main.mouseY) - new Vector2(Main.screenWidth / 2, Main.screenHeight / 2)).Length() > 200)
                 {
                     int mouseXdiff = Main.mouseX - lastMouseX;
                     int mouseYdiff = Main.mouseY - lastMouseY;

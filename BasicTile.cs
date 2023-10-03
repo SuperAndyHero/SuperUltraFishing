@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using SuperUltraFishing.World;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,9 +41,9 @@ namespace SuperUltraFishing
 
         public void GetTileModel()
         {
-            if (World.CrossTile.Contains(TileType))
+            if (GameWorld.CrossTile.Contains(TileType))
                 Model = BlockModelType.Cross;
-            else if (World.FourSidedTiles.Contains(TileType))
+            else if (GameWorld.FourSidedTiles.Contains(TileType))
                 Model = BlockModelType.FourSidedCube;
             else if (Main.tileFrameImportant[TileType])
                 Model = BlockModelType.TwoSidedCube;

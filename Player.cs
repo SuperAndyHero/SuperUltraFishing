@@ -23,6 +23,7 @@ using Vector3 = Microsoft.Xna.Framework.Vector3;
 using static SuperUltraFishing.RobotPlayer;
 using static SuperUltraFishing.Collision;
 using SuperUltraFishing.Render;
+using SuperUltraFishing.World;
 
 namespace SuperUltraFishing
 {
@@ -37,7 +38,7 @@ namespace SuperUltraFishing
         public float BaseMoveSpeed;
         private float CurrentMoveSpeed;
 
-        private World world;
+        private GameWorld world;
         private Rendering rendering;
         private FishingUIWindow fishingUIWindow;
 
@@ -52,7 +53,7 @@ namespace SuperUltraFishing
 
         public override void PostAddRecipes()
         {
-            world = GetInstance<World>();
+            world = GetInstance<GameWorld>();
             rendering = GetInstance<Rendering> ();
             fishingUIWindow = GetInstance<FishingUIWindow>();
         }

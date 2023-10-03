@@ -14,14 +14,14 @@ using Terraria.ModLoader;
 using Terraria.UI;
 using static Terraria.ModLoader.ModContent;
 
-namespace SuperUltraFishing
+namespace SuperUltraFishing.World
 {
-    public class World : ModSystem
+    public class GameWorld : ModSystem
     {
         public EntitySystem entitySystem;
 
         public BasicTile[,,] TileArray = null;
-        public Color[,,] LightingArray = null;
+        public Color[,,] LightingArray = null;//unused
 
         public int GetAreaSizeX => TileArray.GetLength(0);
         public int GetAreaSizeY => TileArray.GetLength(1);
@@ -148,7 +148,7 @@ namespace SuperUltraFishing
 
         public bool ValidTilePos(int x, int y, int z)
         {
-            return 
+            return
                 x >= 0 && x < GetAreaSizeX &&
                 y >= 0 && y < GetAreaSizeY &&
                 z >= 0 && z < GetAreaSizeZ;
@@ -217,7 +217,7 @@ namespace SuperUltraFishing
                     {
                         if (aboveTile.LiquidAmount < minTileLiquidAmount)//if there is no liquid break loop, else keep trying
                         {
-                            surfaceOrigin = new Point16(start.X + xRoofOffset, (start.Y - i) + 1);
+                            surfaceOrigin = new Point16(start.X + xRoofOffset, start.Y - i + 1);
                             atSurface = true;
                             break;
                         }
@@ -267,9 +267,9 @@ namespace SuperUltraFishing
                 for (int a = 0; a < maxLakeRectSize; a++)
                 {
                     //checks left row
-                    for (int l = (lFoundWater ? 0 : dOff); l < dOff + 2; l++)//only checks bottom block if no liquid was found
+                    for (int l = lFoundWater ? 0 : dOff; l < dOff + 2; l++)//only checks bottom block if no liquid was found
                     {
-                        Tile tile = Main.tile[(surfaceOrigin.X - lOff) - 1, surfaceOrigin.Y + l];
+                        Tile tile = Main.tile[surfaceOrigin.X - lOff - 1, surfaceOrigin.Y + l];
                         if (TileHasValidLiquid(tile))
                         {
                             //WorldGen.PlaceWall((surfaceOrigin.X - lOff) - 1, surfaceOrigin.Y + l, WallID.AmethystGemspark, true);
@@ -282,9 +282,9 @@ namespace SuperUltraFishing
                     }
 
                     //checks right row
-                    for (int r = (rFoundWater ? 0 : dOff); r < dOff + 2; r++)//only checks bottom block if no liquid was found
+                    for (int r = rFoundWater ? 0 : dOff; r < dOff + 2; r++)//only checks bottom block if no liquid was found
                     {
-                        Tile tile = Main.tile[(surfaceOrigin.X + rOff) + 1, surfaceOrigin.Y + r];
+                        Tile tile = Main.tile[surfaceOrigin.X + rOff + 1, surfaceOrigin.Y + r];
                         if (TileHasValidLiquid(tile))
                         {
                             //WorldGen.PlaceWall((surfaceOrigin.X + rOff) + 1, surfaceOrigin.Y + r, WallID.EmeraldGemspark, true);
@@ -300,7 +300,7 @@ namespace SuperUltraFishing
                     if (dFoundWater)
                         for (int d = 0; d < lOff + rOff + 1; d++)
                         {
-                            Tile tile = Main.tile[(surfaceOrigin.X - lOff) + d, surfaceOrigin.Y + dOff + 1];
+                            Tile tile = Main.tile[surfaceOrigin.X - lOff + d, surfaceOrigin.Y + dOff + 1];
                             if (TileHasValidLiquid(tile))
                             {
                                 //WorldGen.PlaceWall((surfaceOrigin.X - lOff) + d, surfaceOrigin.Y + dOff + 1, WallID.SapphireGemspark, true);
@@ -309,13 +309,13 @@ namespace SuperUltraFishing
                                 break;
                             }
                             else
-                               dFoundWater = false;
+                                dFoundWater = false;
                         }
                     else//only checks under each side bar if no water was found
                     {
-                        Tile ltile = Main.tile[(surfaceOrigin.X - lOff) - 1, surfaceOrigin.Y + dOff + 2];
-                        Tile rtile = Main.tile[(surfaceOrigin.X + rOff) + 1, surfaceOrigin.Y + dOff + 2];
-                        if ((TileHasValidLiquid(ltile)) ||
+                        Tile ltile = Main.tile[surfaceOrigin.X - lOff - 1, surfaceOrigin.Y + dOff + 2];
+                        Tile rtile = Main.tile[surfaceOrigin.X + rOff + 1, surfaceOrigin.Y + dOff + 2];
+                        if (TileHasValidLiquid(ltile) ||
                             TileHasValidLiquid(rtile))
                         {
                             //WorldGen.PlaceWall((surfaceOrigin.X - lOff) - 1, surfaceOrigin.Y + dOff + 2, WallID.RubyGemspark, true);
@@ -325,17 +325,17 @@ namespace SuperUltraFishing
                         }
                     }
 
-                    if(!lFoundWater && !rFoundWater && !dFoundWater)
+                    if (!lFoundWater && !rFoundWater && !dFoundWater)
                         break;
                 }
 
 
-                int width = lOff + rOff + 1 + (wallBuffer * 2);
-                int leftPosX = (surfaceOrigin.X - lOff) - wallBuffer;
+                int width = lOff + rOff + 1 + wallBuffer * 2;
+                int leftPosX = surfaceOrigin.X - lOff - wallBuffer;
                 Main.NewText("surface buffer " + surfacebuffer);
-                surfacebuffer = FindSurfaceHeight(leftPosX, (surfaceOrigin.Y - 1) - min_surfacebuffer, width);
+                surfacebuffer = FindSurfaceHeight(leftPosX, surfaceOrigin.Y - 1 - min_surfacebuffer, width);
 
-                Rectangle waterRect = new Rectangle(leftPosX, (surfaceOrigin.Y - 1) - surfacebuffer, width, dOff + 1 + (wallBuffer + surfacebuffer));
+                Rectangle waterRect = new Rectangle(leftPosX, surfaceOrigin.Y - 1 - surfacebuffer, width, dOff + 1 + wallBuffer + surfacebuffer);
                 return waterRect;
             }
             else
@@ -375,7 +375,7 @@ namespace SuperUltraFishing
                 }
                 distance++;
 
-                if (solidCount == 0 || solidCount == (width))
+                if (solidCount == 0 || solidCount == width)
                     return distance;
             }
             return distance;// maxsurfacebuffer;
@@ -433,7 +433,7 @@ namespace SuperUltraFishing
             for (int i = 0; i < MaxCheckedWaterTiles; i++)
             {
                 if (checkSurroundQueue.Count == 0)//if there are no more tiles to check break
-                    break;  
+                    break;
 
                 //recursively checks surrounding water blocks and adds them to the queue
                 Point pos = checkSurroundQueue.Dequeue();
@@ -446,7 +446,7 @@ namespace SuperUltraFishing
 
             void CheckAddWaterTile(Point pos)
             {
-                if(!checkedPoints.Contains(pos))
+                if (!checkedPoints.Contains(pos))
                 {
                     if (TileHasValidLiquid(Main.tile[pos]))
                     {
@@ -469,7 +469,7 @@ namespace SuperUltraFishing
                         {
                             for (int u = 0; u < surroundTilesForGround; u++)
                             {
-                                Point offsetPoint = pos + (offset * new Point(u, u));
+                                Point offsetPoint = pos + offset * new Point(u, u);
                                 //if this tile is outside the total bounding box immediately consider the base tile part of the ground
                                 if (!worldArea.Contains(offsetPoint))
                                     totalSurround += surroundTilesForGround;
@@ -481,7 +481,7 @@ namespace SuperUltraFishing
                             }
                         }
 
-                        if(totalSurround >= surroundTilesForGround)
+                        if (totalSurround >= surroundTilesForGround)
                             groundedLocationList.Add(pos);
                     }
 
@@ -495,7 +495,7 @@ namespace SuperUltraFishing
             foreach (Point waterPos in tileLocationList)
             {
                 float nearestPoint = float.MaxValue;
-                foreach(Point groundPos in groundedLocationList)
+                foreach (Point groundPos in groundedLocationList)
                 {
                     float distance = Vector2.Distance(waterPos.ToVector2(), groundPos.ToVector2());
                     if (distance < nearestPoint)
@@ -524,16 +524,16 @@ namespace SuperUltraFishing
 
 
 
-            Point16 centerOffset = new Point16((worldArea.Width / 2), (worldArea.Height / 2));
-            Vector3 areaCenter = new Vector3((GetAreaSizeX / 2), (GetAreaSizeY / 2), GetAreaSizeZ / 2);
-            Vector3 worldAreaCorner = areaCenter - new Vector3(centerOffset.X, centerOffset.Y + (extraSizeY / 2), 0);
+            Point16 centerOffset = new Point16(worldArea.Width / 2, worldArea.Height / 2);
+            Vector3 areaCenter = new Vector3(GetAreaSizeX / 2, GetAreaSizeY / 2, GetAreaSizeZ / 2);
+            Vector3 worldAreaCorner = areaCenter - new Vector3(centerOffset.X, centerOffset.Y + extraSizeY / 2, 0);
 
             FastNoise.FastNoise noise = new FastNoise.FastNoise((int)(Main.GameUpdateCount % int.MaxValue));
 
             (Dictionary<Point, float> TilePositonDistance, List<(Point16 center, int waterCount)> WaterBodyCenterCount) = WaterBodyScan(worldArea);
 
             float MaxVal = 0;
-            foreach(var pair in TilePositonDistance)
+            foreach (var pair in TilePositonDistance)
             {
                 if (pair.Value > MaxVal)
                     MaxVal = pair.Value;
@@ -548,8 +548,8 @@ namespace SuperUltraFishing
             ushort lastTileType = 1;
             for (int j = 0; j < worldArea.Height; j++)
             {
-                int yoffset = ((int)worldAreaCorner.Y + j);
-                int yWorld = (worldArea.Height + worldArea.Y) - j;
+                int yoffset = (int)worldAreaCorner.Y + j;
+                int yWorld = worldArea.Height + worldArea.Y - j;
 
                 int aboveWaterLeftDist = -1;
                 int aboveWaterRightDist = -1;
@@ -564,10 +564,10 @@ namespace SuperUltraFishing
                         }
 
                     for (int r = wallBuffer / 2; r < wallBuffer + 1; r++)
-                        if (!WaterCanPassThoughTile(Main.tile[(worldArea.X + worldArea.Width) - r, yWorld]))
+                        if (!WaterCanPassThoughTile(Main.tile[worldArea.X + worldArea.Width - r, yWorld]))
                         {
                             aboveWaterRightDist = r;
-                            lastTileType = Main.tile[(worldArea.X + worldArea.Width) - r, yWorld].TileType;
+                            lastTileType = Main.tile[worldArea.X + worldArea.Width - r, yWorld].TileType;
                         }
                 }
 
@@ -578,7 +578,7 @@ namespace SuperUltraFishing
                 for (int i = 0; i < worldArea.Width; i++)
                 {
 
-                    int xoffset = ((int)worldAreaCorner.X + i);
+                    int xoffset = (int)worldAreaCorner.X + i;
 
                     Point position = new Point(worldArea.X + i, yWorld);
                     Tile vanillaTile = Main.tile[position];
@@ -591,7 +591,7 @@ namespace SuperUltraFishing
                         BlockType = vanillaTile.BlockType,
                         PaintColor = vanillaTile.TileColor,
                         TileFrame = new Vector2(vanillaTile.TileFrameX, vanillaTile.TileFrameY),
-                        Collide = (Main.tileSolid[vanillaTile.TileType] || !Main.tileSolidTop[vanillaTile.TileType])
+                        Collide = Main.tileSolid[vanillaTile.TileType] || !Main.tileSolidTop[vanillaTile.TileType]
                     };
                     TileArray[xoffset, yoffset, (int)worldAreaCorner.Z].GetTileModel();
 
@@ -600,22 +600,23 @@ namespace SuperUltraFishing
                     float distanceOffset = -0.5f;//a offset to the distance, moves the terrain closer to the center, lower = closer
                     float aboveWallDistanceOffset = 1.2f;
                     bool validValue = TilePositonDistance.TryGetValue(position, out float distance);
-                    int evenOffset = (GetAreaSizeZ % 2 == 0) ? 1 : 0;
+                    int evenOffset = GetAreaSizeZ % 2 == 0 ? 1 : 0;
 
                     bool belowWaterHeight = j < worldArea.Height - surfacebuffer;
-                    bool aboveWaterWall = (aboveWaterLeftDist > 0 || aboveWaterRightDist > 0);
-                    if (belowWaterHeight || aboveWaterWall) {
-                        int distL = (aboveWaterLeftDist > 0 && aboveWaterRightDist > 0) ? i - aboveWaterLeftDist : (int.MaxValue / 2);
-                        int distR = (aboveWaterLeftDist > 0 && aboveWaterRightDist > 0) ? (worldArea.Width - i) - aboveWaterRightDist : (int.MaxValue / 2);
+                    bool aboveWaterWall = aboveWaterLeftDist > 0 || aboveWaterRightDist > 0;
+                    if (belowWaterHeight || aboveWaterWall)
+                    {
+                        int distL = aboveWaterLeftDist > 0 && aboveWaterRightDist > 0 ? i - aboveWaterLeftDist : int.MaxValue / 2;
+                        int distR = aboveWaterLeftDist > 0 && aboveWaterRightDist > 0 ? worldArea.Width - i - aboveWaterRightDist : int.MaxValue / 2;
                         int combinedDist = Math.Max(0, Math.Min(distL, distR));
 
-                        for (int k = 0; k < (GetAreaSizeZ / 2) - evenOffset; k++)
+                        for (int k = 0; k < GetAreaSizeZ / 2 - evenOffset; k++)
                         {
                             int zoffset = (int)worldAreaCorner.Z + k + 1;
                             float noiseVal = Math.Abs(noise.GetCubicFractal(xoffset * featureScale, yoffset * (featureScale * (!belowWaterHeight ? 0.5f : 2)), zoffset * (featureScale * 2)) * 20);
 
                             bool inDistance =
-                                ((float)(k * widthMultiplier) - noiseVal) > (aboveWaterWall ?
+                                (float)(k * widthMultiplier) - noiseVal > (aboveWaterWall ?
                                 combinedDist + aboveWallDistanceOffset :
                                 distance + distanceOffset);
 
@@ -625,10 +626,10 @@ namespace SuperUltraFishing
                             TileArray[xoffset, yoffset, zoffset] = new BasicTile()
                             {
                                 Active =
-                                ((belowWaterHeight || (aboveWaterLeftDist > 0 && aboveWaterRightDist > 0)) && zoffset == (GetAreaSizeZ - 1)) ||
-                                (belowWaterHeight && ((!validValue || distance == 0))) || //invalid tiles, or valid ones that are part of ground (originally was just 'belowWaterHeight && !validValue' but this caused some issues withit being wider than the center array
+                                (belowWaterHeight || aboveWaterLeftDist > 0 && aboveWaterRightDist > 0) && zoffset == GetAreaSizeZ - 1 ||
+                                belowWaterHeight && (!validValue || distance == 0) || //invalid tiles, or valid ones that are part of ground (originally was just 'belowWaterHeight && !validValue' but this caused some issues withit being wider than the center array
                                 inDistance ||
-                                (!belowWaterHeight && !WaterCanPassThoughTile(vanillaTile) && vanillaTile.HasTile && aboveWaterWall),
+                                !belowWaterHeight && !WaterCanPassThoughTile(vanillaTile) && vanillaTile.HasTile && aboveWaterWall,
                                 TileType = lastTileType,
                                 BlockType = vanillaTile.BlockType,
                                 PaintColor = vanillaTile.TileColor,
@@ -638,14 +639,14 @@ namespace SuperUltraFishing
                             TileArray[xoffset, yoffset, zoffset].GetTileModel();
                         }
 
-                        for (int k = 1; k < (GetAreaSizeZ / 2f) + evenOffset; k++)
+                        for (int k = 1; k < GetAreaSizeZ / 2f + evenOffset; k++)
                         {
                             int zoffset = (int)worldAreaCorner.Z - k;
                             float noiseVal = Math.Abs(noise.GetCubicFractal(xoffset * featureScale, yoffset * (featureScale * (!belowWaterHeight ? 0.5f : 2)), zoffset * (featureScale * 2)) * 20);
 
-                            bool inDistance = 
-                                ((float)(k * widthMultiplier) - noiseVal) > (aboveWaterWall ? 
-                                combinedDist + aboveWallDistanceOffset : 
+                            bool inDistance =
+                                (float)(k * widthMultiplier) - noiseVal > (aboveWaterWall ?
+                                combinedDist + aboveWallDistanceOffset :
                                 distance + distanceOffset);
 
                             if (vanillaTile.HasTile && !WaterCanPassThoughTile(vanillaTile))
@@ -653,11 +654,11 @@ namespace SuperUltraFishing
 
                             TileArray[xoffset, yoffset, zoffset] = new BasicTile()
                             {
-                                Active = 
-                                ((belowWaterHeight || (aboveWaterLeftDist > 0 && aboveWaterRightDist > 0)) && (zoffset == 0)) ||
-                                (belowWaterHeight && (!validValue || distance == 0)) || //invalid tiles, or valid ones that are part of ground (originally was just 'belowWaterHeight && !validValue' but this caused some issues withit being wider than the center array
-                                inDistance || 
-                                (!belowWaterHeight && !WaterCanPassThoughTile(vanillaTile) && vanillaTile.HasTile && aboveWaterWall), 
+                                Active =
+                                (belowWaterHeight || aboveWaterLeftDist > 0 && aboveWaterRightDist > 0) && zoffset == 0 ||
+                                belowWaterHeight && (!validValue || distance == 0) || //invalid tiles, or valid ones that are part of ground (originally was just 'belowWaterHeight && !validValue' but this caused some issues withit being wider than the center array
+                                inDistance ||
+                                !belowWaterHeight && !WaterCanPassThoughTile(vanillaTile) && vanillaTile.HasTile && aboveWaterWall,
                                 TileType = lastTileType,
                                 BlockType = vanillaTile.BlockType,
                                 PaintColor = vanillaTile.TileColor,
@@ -723,7 +724,7 @@ namespace SuperUltraFishing
 
             CaptureWorldArea(worldrect.Value);//temp name
 
-            WaterLevel = GetAreaSizeY - ((wallBuffer + surfacebuffer) + 1.75f);
+            WaterLevel = GetAreaSizeY - (wallBuffer + surfacebuffer + 1.75f);
 
             WorldGenerated = true;
             return true;

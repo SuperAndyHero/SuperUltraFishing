@@ -18,12 +18,13 @@ using Terraria.ModLoader;
 using Terraria.UI;
 using static Terraria.ModLoader.ModContent;
 using ReLogic.Content;
+using SuperUltraFishing.World;
 
 namespace SuperUltraFishing.Render
 {
     public class MeshRendering
     {
-        private World world;
+        private GameWorld world;
         private RobotPlayer player;
         private Rendering rendering;
 
@@ -155,7 +156,7 @@ namespace SuperUltraFishing.Render
             ProjectionMatrix = Matrix.CreatePerspectiveFieldOfView((float)Math.PI / 2f, Main.screenWidth / (float)Main.screenHeight, 1, 4000);
             WorldMatrix = Matrix.CreateWorld(Vector3.Zero, Vector3.Forward, Vector3.Up) * Matrix.CreateScale(10);
 
-            WaterShimmerEffect = Request<Effect>("Effects/WaterShader", AssetRequestMode.ImmediateLoad).Value;
+            WaterShimmerEffect = Request<Effect>("SuperUltraFishing/Effects/WaterShader", AssetRequestMode.ImmediateLoad).Value;
 
             DebugSphere = ContentHandler.GetModel("SuperUltraFishing/Models/BoundingSphere3");
 
@@ -175,7 +176,7 @@ namespace SuperUltraFishing.Render
             cubeeffect.PreferPerPixelLighting = true;
         }
 
-        public void PostLoad(World world, RobotPlayer player)
+        public void PostLoad(GameWorld world, RobotPlayer player)
         {
             this.world = world;
             this.player = player;
@@ -438,7 +439,7 @@ namespace SuperUltraFishing.Render
                 {
                     AddWaterPlane(new Vector3(x - 0.5f, world.WaterLevel, z + WaterPlaneSize - 0.5f), WaterPlaneSize, new Vector3(0, (float)Math.PI, 0), new Color(0.045f, 0.2f, 0.45f, 0.0f));
                     ///*debug*/
-        AddWaterPlane(new Vector3(x - 0.5f, sizeY - ((World.wallBuffer * 2)), z - 0.5f), WaterPlaneSize, new Vector3(0, 0, 0), new Color(0.025f, 0.1f, 0.25f, 0.0f));
+        AddWaterPlane(new Vector3(x - 0.5f, sizeY - ((GameWorld.wallBuffer * 2)), z - 0.5f), WaterPlaneSize, new Vector3(0, 0, 0), new Color(0.025f, 0.1f, 0.25f, 0.0f));
                 }
             }
 

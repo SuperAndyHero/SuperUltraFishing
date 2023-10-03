@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using SuperUltraFishing.World;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +28,7 @@ namespace SuperUltraFishing
             }
         }
 
-        public static Vector3 CollideSphereWithTile(BoundingSphere BoundingSphere, int i, int j, int k, World world, out bool Collided)
+        public static Vector3 CollideSphereWithTile(BoundingSphere BoundingSphere, int i, int j, int k, GameWorld world, out bool Collided)
         {//this could cache tile collison data, but is likely not needed
             Vector3 StartPosition = BoundingSphere.Center;
             int tilePosX = (int)((StartPosition.X / 10f) - 0.5f) + i;

@@ -18,13 +18,14 @@ using Terraria.ModLoader;
 using Terraria.UI;
 using static Terraria.ModLoader.ModContent;
 using ReLogic.Content;
+using SuperUltraFishing.World;
 
 namespace SuperUltraFishing.Render
 {
     //biome specific data
     public class BiomeRendering
     {
-        private World world;
+        private GameWorld world;
         private RobotPlayer player;
         private Rendering rendering;
 
@@ -35,7 +36,7 @@ namespace SuperUltraFishing.Render
             this.rendering = rendering;
         }
 
-        public void PostLoad(World world, RobotPlayer player)
+        public void PostLoad(GameWorld world, RobotPlayer player)
         {
             this.world = world;
             this.player = player;

@@ -28,12 +28,13 @@ using Microsoft.Xna.Framework.Media;
 using Microsoft.Xna.Framework.Design;
 using SuperUltraFishing.Render;
 using static SuperUltraFishing.Collision;
+using SuperUltraFishing.World;
 
 namespace SuperUltraFishing
 {
     public class EntitySystem : ModSystem
     {
-        public World world;
+        public GameWorld world;
         public Rendering rendering;
         public RobotPlayer player;
 
@@ -47,7 +48,7 @@ namespace SuperUltraFishing
 
         public override void PostAddRecipes()
         {
-            world = GetInstance<World>();
+            world = GetInstance<GameWorld>();
             rendering = GetInstance<Rendering>();
             player = GetInstance<RobotPlayer>();
         }
