@@ -1,0 +1,11 @@
+Items: {
+	DebugRod: {
+		DisplayName: Debug Rod
+		Tooltip: ""
+	}
+
+	Sub: {
+		DisplayName: Sub
+		Tooltip: ""
+	}
+}

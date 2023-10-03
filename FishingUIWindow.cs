@@ -15,6 +15,7 @@ using Terraria.Graphics.Shaders;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI;
+using SuperUltraFishing.Render;
 using static Terraria.ModLoader.ModContent;
 
 namespace SuperUltraFishing
@@ -22,6 +23,7 @@ namespace SuperUltraFishing
     internal class FishingUIWindow : ModSystem
     {
         public bool DebugMode = false;
+        public bool NoClip = false;
         public bool WindowActive = false;
 
         private World world;
@@ -50,7 +52,7 @@ namespace SuperUltraFishing
             if (!successful)
                 return;
 
-            rendering.BuildVertexBuffer();
+            rendering.Mesh.Build();
             player.Reset();
 
 
@@ -97,7 +99,7 @@ namespace SuperUltraFishing
             {
                 Main.NewText("opening window via debug");
                 world.DebugGenerateWorld(new Rectangle(selectedPointA.X, selectedPointA.Y, selectedPointB.X - selectedPointA.X, selectedPointB.Y - selectedPointA.Y));
-                rendering.BuildVertexBuffer();
+                rendering.Mesh.Build();
                 player.Reset();
 
 
@@ -121,6 +123,12 @@ namespace SuperUltraFishing
             {
                 Main.NewText("Toggled Debug");
                 DebugMode = !DebugMode;
+            }
+
+            if (Main.keyState.IsKeyDown(Keys.NumPad3) && !Main.oldKeyState.IsKeyDown(Keys.NumPad3))
+            {
+                Main.NewText("Toggled NoClip");
+                NoClip = !NoClip;
             }
 
             //toggle window active
@@ -156,7 +164,7 @@ namespace SuperUltraFishing
                 if (Main.keyState.IsKeyDown(Keys.NumPad1) && !Main.oldKeyState.IsKeyDown(Keys.NumPad1))
                 {
                     Main.NewText("Rebuilt vertex buffer");
-                    rendering.BuildVertexBuffer();
+                    rendering.Mesh.Build();
                 }
 
                 //Close window with escape

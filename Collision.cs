@@ -10,7 +10,7 @@ namespace SuperUltraFishing
 {
     public static class Collision
     {
-        public struct Triangle
+        public struct Triangle//this could be optimized, but the amount of these active at any given time is low
         {
             public Vector3 PointA;
             public Vector3 PointB;
@@ -23,12 +23,12 @@ namespace SuperUltraFishing
                 this.PointA = PointA;
                 this.PointB = PointB;
                 this.PointC = PointC;
-                Normal = Rendering.CalculateNormal(PointA, PointB, PointC);
+                Normal = Render.MeshRendering.CalculateNormal(PointA, PointB, PointC);//reused from rendering
             }
         }
 
         public static Vector3 CollideSphereWithTile(BoundingSphere BoundingSphere, int i, int j, int k, World world, out bool Collided)
-        {
+        {//this could cache tile collison data, but is likely not needed
             Vector3 StartPosition = BoundingSphere.Center;
             int tilePosX = (int)((StartPosition.X / 10f) - 0.5f) + i;
             int tilePosY = (int)((StartPosition.Y / 10f) - 0.5f) + j;

@@ -1,4 +1,3 @@
-using IL.Terraria.GameContent.Achievements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -359,11 +358,11 @@ namespace SuperUltraFishing.UI
             }
         }
 
-        public override void MouseDown(UIMouseEvent evt)
+        public override void LeftMouseDown(UIMouseEvent evt)
         {
             onClick(false);
             //SoundEngine.PlaySound(SoundID.MenuTick);
-            base.MouseDown(evt);
+            base.LeftMouseDown(evt);
         }
 
         public override void RightMouseDown(UIMouseEvent evt)

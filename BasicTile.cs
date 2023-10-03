@@ -13,21 +13,21 @@ namespace SuperUltraFishing
     {
         public BasicTile() { }
 
-        public bool Active = false;
+        public bool Active = false;//is there a tile here
 
         public ushort TileType = 0;
 
-        public Vector2 TileFrame = Vector2.Zero;//used for frame important tiles only
+        public Vector2 TileFrame = Vector2.Zero;//only used for frame important tiles
 
         public BlockType BlockType = BlockType.Solid;
 
         public bool Collide = true;
 
-        public byte Color = 0;
+        public byte PaintColor = 0;
 
-        public BlockModel Model = BlockModel.Cube;
+        public BlockModelType Model = BlockModelType.Cube;//this could be removed and gotten as the mesh is generated
 
-        public enum BlockModel
+        public enum BlockModelType : byte
         {
             Cube = 0,
             Cross = 1,
@@ -41,15 +41,15 @@ namespace SuperUltraFishing
         public void GetTileModel()
         {
             if (World.CrossTile.Contains(TileType))
-                Model = BlockModel.Cross;
+                Model = BlockModelType.Cross;
             else if (World.FourSidedTiles.Contains(TileType))
-                Model = BlockModel.FourSidedCube;
+                Model = BlockModelType.FourSidedCube;
             else if (Main.tileFrameImportant[TileType])
-                Model = BlockModel.TwoSidedCube;
+                Model = BlockModelType.TwoSidedCube;
             else if (!Main.tileBlockLight[TileType] && !Main.tileLighted[TileType])
-                Model = BlockModel.CubeTransparent;
+                Model = BlockModelType.CubeTransparent;
             else
-                Model = BlockModel.Cube;
+                Model = BlockModelType.Cube;
         }
     }
 }

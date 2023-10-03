@@ -40,8 +40,8 @@ namespace SuperUltraFishing.Items
 
         public override void SetStaticDefaults()
 		{
-			DisplayName.SetDefault("SubNameHere");
-			Tooltip.SetDefault("This is a basic modded sword.");
+			//DisplayName.SetDefault("SubNameHere");
+			//Tooltip.SetDefault("This is a basic modded sword.");
 		}
 
 

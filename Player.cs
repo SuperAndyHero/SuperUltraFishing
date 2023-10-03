@@ -22,6 +22,7 @@ using System.Numerics;
 using Vector3 = Microsoft.Xna.Framework.Vector3;
 using static SuperUltraFishing.RobotPlayer;
 using static SuperUltraFishing.Collision;
+using SuperUltraFishing.Render;
 
 namespace SuperUltraFishing
 {
@@ -47,11 +48,12 @@ namespace SuperUltraFishing
 
         public bool ShouldUpdate => fishingUIWindow.WindowActive;
         public bool DebugMode => fishingUIWindow.DebugMode;
+        public bool NoClip => fishingUIWindow.NoClip;
 
         public override void PostAddRecipes()
         {
             world = GetInstance<World>();
-            rendering = GetInstance< Rendering> ();
+            rendering = GetInstance<Rendering> ();
             fishingUIWindow = GetInstance<FishingUIWindow>();
         }
 
@@ -60,7 +62,7 @@ namespace SuperUltraFishing
             int debugBoxsize = 4;
             BoundingSphere = new BoundingSphere(Vector3.Zero, debugBoxsize);
             //BoundingBox = new BoundingBox();
-            Position = new Vector3(world.AreaSizeX, world.AreaSizeY, world.AreaSizeZ) * 4;
+            Position = new Vector3(world.GetAreaSizeX, world.GetAreaSizeY, world.GetAreaSizeZ) * 4;//world coords are 1/8th player coords
             Velocity = Vector3.Zero;
             Yaw = 0;
             Pitch = 0;
@@ -134,7 +136,9 @@ namespace SuperUltraFishing
                 Position += Velocity;
 
                 BoundingSphere.Center = Position;
-                TileCollisions();
+
+                if(!NoClip)
+                    TileCollisions();
 
 
 
@@ -181,7 +185,7 @@ namespace SuperUltraFishing
             if (debugVector3 != Vector3.Zero)
             {
                 Matrix ScalePosBounds = Matrix.CreateScale(0.1f) * Matrix.CreateTranslation(debugVector3);
-                rendering.DebugCube.Draw(rendering.WorldMatrix * ScalePosBounds, rendering.ViewMatrix, rendering.ProjectionMatrix);
+                rendering.Mesh.DebugCube.Draw(rendering.Mesh.WorldMatrix * ScalePosBounds, rendering.Mesh.ViewMatrix, rendering.Mesh.ProjectionMatrix);
             }
         }
 
@@ -198,7 +202,7 @@ namespace SuperUltraFishing
                         tilePosX * 10,
                         tilePosY * 10,
                         tilePosZ * 10));
-                rendering.DebugCube.Draw(rendering.WorldMatrix * ScalePosBounds, rendering.ViewMatrix, rendering.ProjectionMatrix);
+                rendering.Mesh.DebugCube.Draw(rendering.Mesh.WorldMatrix * ScalePosBounds, rendering.Mesh.ViewMatrix, rendering.Mesh.ProjectionMatrix);
             }
         }
     }

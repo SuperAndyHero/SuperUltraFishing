@@ -67,7 +67,7 @@ namespace SuperUltraFishing
             foreach (var mesh in Model.Meshes)
                 foreach (var meshpart in mesh.MeshParts)
                 {
-                    meshpart.Effect = EntitySystem.rendering.ModelEffect;//.Clone();//may want to clone this or have a instance per model
+                    meshpart.Effect = EntitySystem.rendering.Mesh.ModelEffect;//.Clone();//may want to clone this or have a instance per model type
                 }
         }
 
@@ -101,7 +101,7 @@ namespace SuperUltraFishing
         public void Collision()
         {
             //entity-player collision
-            if (TransformedBoundingSphere.Intersects(EntitySystem.player.BoundingSphere))
+            if (!EntitySystem.player.NoClip && TransformedBoundingSphere.Intersects(EntitySystem.player.BoundingSphere))
             {
                 Vector3 collideOffset = CollideSphrWithSphr(TransformedBoundingSphere.Center, TransformedBoundingSphere.Radius, EntitySystem.player.BoundingSphere.Center, EntitySystem.player.BoundingSphere.Radius);
 
@@ -168,14 +168,14 @@ namespace SuperUltraFishing
             if (Model != null)
             {
                 //this assumes the model has all parts set to the default effect, this may need to be changed to use a cached effect reference, or change the values for each mech part seperately
-                SkinnedEffect effect = EntitySystem.rendering.ModelEffect;
+                SkinnedEffect effect = EntitySystem.rendering.Mesh.ModelEffect;
                 if(Texture != null)
                     effect.Texture = Texture.Value;
                 effect.SetBoneTransforms(BoneTransforms);
                 effect.DiffuseColor = ModelColor.ToVector3();
 
                 Matrix ScaleRotPos = Matrix.CreateScale(Scale * ModelScale) * Matrix.CreateFromYawPitchRoll(Yaw, Pitch, 0) * Matrix.CreateTranslation(Position);
-                Model.Draw(EntitySystem.rendering.WorldMatrix * ScaleRotPos, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
+                Model.Draw(EntitySystem.rendering.Mesh.WorldMatrix * ScaleRotPos, EntitySystem.rendering.Mesh.ViewMatrix, EntitySystem.rendering.Mesh.ProjectionMatrix);
                 //crashes if blendweight / blend index array does not exist in vertex dec since this uses skinned effect
                 //having no vertex colors is fine
                 //needs another effect if there needs to be a entity with no armature
@@ -183,7 +183,7 @@ namespace SuperUltraFishing
                 if (false)//debug sphere drawing
                 {
                     Matrix ScalePosBounds = Matrix.CreateScale(TransformedBoundingSphere.Radius * 0.1f) * Matrix.CreateTranslation(TransformedBoundingSphere.Center);
-                    EntitySystem.rendering.DebugSphere.Draw(EntitySystem.rendering.WorldMatrix * ScalePosBounds, EntitySystem.rendering.ViewMatrix, EntitySystem.rendering.ProjectionMatrix);
+                    EntitySystem.rendering.Mesh.DebugSphere.Draw(EntitySystem.rendering.Mesh.WorldMatrix * ScalePosBounds, EntitySystem.rendering.Mesh.ViewMatrix, EntitySystem.rendering.Mesh.ProjectionMatrix);
                 }
             }
 

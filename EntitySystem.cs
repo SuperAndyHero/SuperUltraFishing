@@ -26,6 +26,7 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Input.Touch;
 using Microsoft.Xna.Framework.Media;
 using Microsoft.Xna.Framework.Design;
+using SuperUltraFishing.Render;
 using static SuperUltraFishing.Collision;
 
 namespace SuperUltraFishing
