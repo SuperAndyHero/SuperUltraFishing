@@ -27,5 +27,24 @@ namespace SuperUltraFishing
         {
             ContentHandler.Unload();
         }
+
+        public static (int x, int y, int z) TileSidesOffset(int loop)
+        {
+            switch (loop)
+            {
+                default:
+                    return (0, 1, 0);
+                case 1:
+                    return (1, 0, 0);
+                case 2:
+                    return (0, 0, 1);
+                case 3:
+                    return (-1, 0, 0);
+                case 4:
+                    return (0, 0, -1);
+                case 5:
+                    return (0, -1, 0);
+            }
+        }
     }
 }

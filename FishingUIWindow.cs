@@ -45,7 +45,7 @@ namespace SuperUltraFishing
 
         public void ActivateWindow(Point16 worldLocation)
         {
-            bool successful = world.GenerateWorld(worldLocation);
+            bool successful = world.StartWorld(worldLocation);
 
             if(!string.IsNullOrEmpty(world.Error))
                 Main.NewText("Error: " + world.Error, Color.IndianRed);
@@ -106,17 +106,17 @@ namespace SuperUltraFishing
                 Main.NewText("Point A set to: " + pos);
             }
 
-            if (Main.keyState.IsKeyDown(Keys.NumPad8) && !Main.oldKeyState.IsKeyDown(Keys.NumPad8))
-            {
-                Main.NewText("opening window via debug");
-                world.DebugGenerateWorld(new Rectangle(selectedPointA.X, selectedPointA.Y, selectedPointB.X - selectedPointA.X, selectedPointB.Y - selectedPointA.Y));
-                rendering.Mesh.Build();
-                player.Reset();
+            //if (Main.keyState.IsKeyDown(Keys.NumPad8) && !Main.oldKeyState.IsKeyDown(Keys.NumPad8))
+            //{
+            //    Main.NewText("opening window via debug");
+            //    world.DebugGenerateWorld(new Rectangle(selectedPointA.X, selectedPointA.Y, selectedPointB.X - selectedPointA.X, selectedPointB.Y - selectedPointA.Y));
+            //    rendering.Mesh.Build();
+            //    player.Reset();
 
 
-                Main.NewText("Starting window");
-                WindowActive = true;
-            }
+            //    Main.NewText("Starting window");
+            //    WindowActive = true;
+            //}
 
             //point b
             if (Main.keyState.IsKeyDown(Keys.NumPad9) && !Main.oldKeyState.IsKeyDown(Keys.NumPad9))
@@ -168,7 +168,7 @@ namespace SuperUltraFishing
                 if (Main.keyState.IsKeyDown(Keys.NumPad0) && !Main.oldKeyState.IsKeyDown(Keys.NumPad0))
                 {
                     Main.NewText("Regenerated Tile Array");
-                    world.GenerateWorld(world.LastWorldLocation);
+                    world.StartWorld(world.Generation.LastWorldLocation);
                 }
 
                 //build vertex buffer

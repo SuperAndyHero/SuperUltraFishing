@@ -6,7 +6,24 @@ using System.Threading.Tasks;
 
 namespace SuperUltraFishing.World
 {
-    internal class Spawning
+    public class Spawning
     {
+        private EntitySystem entitySystem;
+        private GameWorld gameworld;
+
+        public Spawning(GameWorld gameworld)
+        {
+            this.gameworld = gameworld;
+        }
+
+        public void PostLoad(EntitySystem entitySystem)
+        {
+            this.entitySystem = entitySystem;
+        }
+
+        public void SpawnEntities()
+        {
+
+        }
     }
 }

@@ -45,9 +45,9 @@ namespace SuperUltraFishing
                 Model = BlockModelType.Cross;
             else if (GameWorld.FourSidedTiles.Contains(TileType))
                 Model = BlockModelType.FourSidedCube;
-            else if (Main.tileFrameImportant[TileType])
+            else if (Main.tileFrameImportant[TileType])//TODO extruded is not used, and 2 sided can likely be removed later once extruded works (not even used right now anyway)
                 Model = BlockModelType.TwoSidedCube;
-            else if (!Main.tileBlockLight[TileType] && !Main.tileLighted[TileType])
+            else if (!Main.tileBlockLight[TileType] && !Main.tileLighted[TileType])//unsure if this lighted check will break stuff
                 Model = BlockModelType.CubeTransparent;
             else
                 Model = BlockModelType.Cube;

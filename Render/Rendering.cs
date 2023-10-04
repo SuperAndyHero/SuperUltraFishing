@@ -42,6 +42,8 @@ namespace SuperUltraFishing.Render
         public Texture2D LargePerlin;//Perlin maps for water
         public Texture2D SmallPerlin;
 
+        //TODO: generate light map, then use vertex colors for the color layer by combining (color * lighting color * paint color)
+
         public override void Load()
         {
             Main.QueueMainThreadAction(() =>

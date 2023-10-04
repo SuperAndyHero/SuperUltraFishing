@@ -93,8 +93,6 @@ namespace SuperUltraFishing.Render
         public RasterizerState FlatColorRasterizer = new RasterizerState() { };
         public RasterizerState TexturedRasterizer = new RasterizerState() { DepthBias = -0.0001f };//prevents Z fighting?
 
-        public static Color[] colorLookup;//color array for blocks
-
         public bool VertexBufferBuilt = false;
 
         public Model DebugSphere;
@@ -103,9 +101,6 @@ namespace SuperUltraFishing.Render
         public MeshRendering(Rendering rendering)
         {
             this.rendering = rendering;
-
-            FieldInfo fieldInfo = typeof(Terraria.Map.MapHelper).GetField("colorLookup", BindingFlags.NonPublic | BindingFlags.Static);
-            colorLookup = (Color[])fieldInfo.GetValue(null);
 
             TexturedEffect = new BasicEffect(Main.graphics.GraphicsDevice)
             {
@@ -421,7 +416,7 @@ namespace SuperUltraFishing.Render
 
         private void BuildTileMesh()//todo: maybe bake the lighting in?
         {
-            if (!world.WorldGenerated)
+            if (!world.Generation.WorldGenerated)
             {
                 Main.NewText("Tried to build world before generated", Color.IndianRed);
                 return;
@@ -439,7 +434,7 @@ namespace SuperUltraFishing.Render
                 {
                     AddWaterPlane(new Vector3(x - 0.5f, world.WaterLevel, z + WaterPlaneSize - 0.5f), WaterPlaneSize, new Vector3(0, (float)Math.PI, 0), new Color(0.045f, 0.2f, 0.45f, 0.0f));
                     ///*debug*/
-        AddWaterPlane(new Vector3(x - 0.5f, sizeY - ((GameWorld.wallBuffer * 2)), z - 0.5f), WaterPlaneSize, new Vector3(0, 0, 0), new Color(0.025f, 0.1f, 0.25f, 0.0f));
+                    //AddWaterPlane(new Vector3(x - 0.5f, sizeY - ((Generation.wallBuffer * 2)), z - 0.5f), WaterPlaneSize, new Vector3(0, 0, 0), new Color(0.025f, 0.1f, 0.25f, 0.0f));
                 }
             }
 
@@ -467,11 +462,11 @@ namespace SuperUltraFishing.Render
                         if (!TextureColor.ContainsKey(tileTexture))
                         {
                             int ltile = Terraria.Map.MapHelper.tileLookup[tile.TileType];
-                            if (ltile >= colorLookup.Length)
+                            if (ltile >= GameWorld.ColorLookup.Length)//modded tiles(?)
                                 ltile = tile.TileType;
 
                             if (tile.Model != BasicTile.BlockModelType.Cross && tile.Model != BasicTile.BlockModelType.CubeTransparent && tile.Model != BasicTile.BlockModelType.Extruded)
-                                TextureColor[tileTexture] = colorLookup[ltile];
+                                TextureColor[tileTexture] = GameWorld.ColorLookup[ltile];
                             else
                                 TextureColor[tileTexture] = Color.Transparent;
                         }
