@@ -26,7 +26,7 @@ namespace SuperUltraFishing.World
         public BasicTile[,,] TileArray = null;
         public Color[,,] LightingArray = null;//unused
 
-        public float WaterLevel;
+        public int WaterLevel;
 
         public int GetAreaSizeX => TileArray.GetLength(0);
         public int GetAreaSizeY => TileArray.GetLength(1);

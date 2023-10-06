@@ -68,7 +68,7 @@ namespace SuperUltraFishing.World
 
             CaptureWorldArea(worldrect.Value);//temp name
 
-            world.WaterLevel = world.GetAreaSizeY - (wallBuffer + surfacebuffer + 1.75f);
+            world.WaterLevel = world.GetAreaSizeY - (wallBuffer + surfacebuffer + 2);
 
             WorldGenerated = true;
 

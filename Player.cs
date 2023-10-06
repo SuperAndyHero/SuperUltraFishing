@@ -124,7 +124,7 @@ namespace SuperUltraFishing
                     Velocity.Y -= SinkSpeed;
 
                 //keeps player below water height
-                float waterlevel = world.WaterLevel * 10;
+                float waterlevel = (world.WaterLevel - 0.25f) * 10;
                 const int waterBoundsYOffset = 3;
                 if (!DebugMode && Position.Y + waterBoundsYOffset >= waterlevel)
                 {

@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Linq;
 using System.Reflection;
@@ -15,6 +16,8 @@ namespace SuperUltraFishing
         public override void Load()
         {
             ContentHandler.Load();
+            Color test = default;
+            int a = 0;
             //Model fish = ContentHandler.GetAsset<Model>("SuperUltraFishing/Models/FishBone").Result;
 
             //string name = "FlatColor";
